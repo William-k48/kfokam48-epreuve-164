@@ -1,0 +1,362 @@
+openapi: 3.0.3
+info:
+  title: Contrat d'API — Épreuve finale KFOKAM48 (matricule KF48-164)
+  version: "1.0"
+  description: |
+    Contrat d'API de l'application de présence et de relecture KFOKAM48.
+
+    Les 5 opérations imposées par le sujet sont reprises EXACTEMENT telles quelles :
+    mêmes chemins, mêmes verbes, mêmes codes de statut, même format d'erreur.
+
+    Les 7 opérations libres ajoutées en dessous couvrent les besoins exprimés
+    dans le cahier des charges (docs/CAHIER_DES_CHARGES.md), sections 4 et 8 (B2),
+    et les décisions A2, A3, A5 de la section 7.
+
+servers:
+  - url: http://localhost:8080
+
+paths:
+
+  # ============================================================
+  # OPÉRATIONS IMPOSÉES (Annexe B du sujet)
+  # ============================================================
+
+  /api/sessions:
+    post:
+      summary: Le formateur ouvre une session et obtient un code de présence
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [titre, promotionId]
+              properties:
+                titre: { type: string }
+                promotionId: { type: integer, format: int64 }
+      responses:
+        "201":
+          description: Session ouverte
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [id, code, ouvertureAt, expirationAt]
+                properties:
+                  id: { type: integer, format: int64 }
+                  code: { type: string }
+                  ouvertureAt: { type: string, format: date-time }
+                  expirationAt: { type: string, format: date-time }
+        "400": { $ref: "#/components/responses/Erreur" }
+
+  /api/presences:
+    post:
+      summary: Un étudiant marque sa présence avec le code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code, etudiantId]
+              properties:
+                code: { type: string }
+                etudiantId: { type: integer, format: int64 }
+      responses:
+        "201":
+          description: Présence enregistrée
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [id, sessionId, etudiantId, source]
+                properties:
+                  id: { type: integer, format: int64 }
+                  sessionId: { type: integer, format: int64 }
+                  etudiantId: { type: integer, format: int64 }
+                  source: { type: string, enum: [ETUDIANT, FORMATEUR] }
+        "400": { $ref: "#/components/responses/Erreur" }
+        "409": { $ref: "#/components/responses/Erreur" }
+        "410": { $ref: "#/components/responses/Erreur" }
+        "429": { $ref: "#/components/responses/Erreur" }
+
+  /api/exercices:
+    post:
+      summary: Un étudiant dépose le lien de son exercice
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [sessionId, etudiantId, lien]
+              properties:
+                sessionId: { type: integer, format: int64 }
+                etudiantId: { type: integer, format: int64 }
+                lien: { type: string, format: uri }
+      responses:
+        "201":
+          description: Exercice déposé
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [id, statut]
+                properties:
+                  id: { type: integer, format: int64 }
+                  statut: { type: string }
+        "400": { $ref: "#/components/responses/Erreur" }
+        "409": { $ref: "#/components/responses/Erreur" }
+
+  /api/relectures/{id}:
+    post:
+      summary: Un relecteur rend sa note et son commentaire
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [note, commentaire]
+              properties:
+                note: { type: integer, minimum: 0, maximum: 20 }
+                commentaire: { type: string }
+      responses:
+        "200": { description: Relecture enregistrée }
+        "400": { $ref: "#/components/responses/Erreur" }
+        "403": { $ref: "#/components/responses/Erreur" }
+        "409": { $ref: "#/components/responses/Erreur" }
+
+  /api/tableau:
+    get:
+      summary: Le tableau récapitulatif du formateur
+      parameters:
+        - name: promotionId
+          in: query
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        "200":
+          description: Récapitulatif par étudiant
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  required:
+                    [etudiantId, nom, presences, exercicesDeposes, moyenne, relecturesEnAttente]
+                  properties:
+                    etudiantId: { type: integer, format: int64 }
+                    nom: { type: string }
+                    presences: { type: integer }
+                    exercicesDeposes: { type: integer }
+                    moyenne: { type: number, nullable: true }
+                    relecturesEnAttente: { type: integer }
+        "404": { $ref: "#/components/responses/Erreur" }
+
+  # ============================================================
+  # OPÉRATIONS LIBRES (ajoutées par le candidat)
+  # Référencées dans le cahier des charges, section 8 (B2).
+  # ============================================================
+
+  /api/promotions:
+    get:
+      summary: Liste des promotions disponibles (EF21, Could)
+      responses:
+        "200":
+          description: Liste des promotions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  required: [id, nom]
+                  properties:
+                    id: { type: integer, format: int64 }
+                    nom: { type: string }
+
+  /api/promotions/{id}/etudiants:
+    get:
+      summary: Liste des étudiants d'une promotion (EF19, Must — alimente la liste déroulante)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        "200":
+          description: Liste des étudiants de la promotion
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  required: [id, nom]
+                  properties:
+                    id: { type: integer, format: int64 }
+                    nom: { type: string }
+        "404": { $ref: "#/components/responses/Erreur" }
+
+  /api/sessions/{id}/presences:
+    post:
+      summary: Le formateur ajoute manuellement une présence (décision A5, EF6, Must)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [etudiantId]
+              properties:
+                etudiantId: { type: integer, format: int64 }
+      responses:
+        "201":
+          description: Présence ajoutée manuellement
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [id, sessionId, etudiantId, source]
+                properties:
+                  id: { type: integer, format: int64 }
+                  sessionId: { type: integer, format: int64 }
+                  etudiantId: { type: integer, format: int64 }
+                  source: { type: string, enum: [FORMATEUR] }
+        "400": { $ref: "#/components/responses/Erreur" }
+        "404": { $ref: "#/components/responses/Erreur" }
+        "409": { $ref: "#/components/responses/Erreur" }
+
+  /api/exercices/{id}:
+    patch:
+      summary: L'étudiant remplace le lien de son exercice (décision A3, EF8, Should)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [lien]
+              properties:
+                lien: { type: string, format: uri }
+      responses:
+        "200": { description: Lien remplacé }
+        "400": { $ref: "#/components/responses/Erreur" }
+        "404": { $ref: "#/components/responses/Erreur" }
+        "409": { $ref: "#/components/responses/Erreur" }
+
+  /api/exercices/{id}/relecteur:
+    patch:
+      summary: Le formateur réassigne le relecteur d'un exercice en attente (décision A2, EF11, Should)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [relecteurId]
+              properties:
+                relecteurId: { type: integer, format: int64 }
+      responses:
+        "200": { description: Relecteur réassigné }
+        "400": { $ref: "#/components/responses/Erreur" }
+        "404": { $ref: "#/components/responses/Erreur" }
+        "409": { $ref: "#/components/responses/Erreur" }
+
+  /api/etudiants/{id}/exercices:
+    get:
+      summary: Liste des exercices d'un étudiant, avec note et commentaire s'ils sont relus (EF15, Must)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        "200":
+          description: Liste des exercices de l'étudiant
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  required: [id, sessionId, lien, statut]
+                  properties:
+                    id: { type: integer, format: int64 }
+                    sessionId: { type: integer, format: int64 }
+                    lien: { type: string, format: uri }
+                    statut: { type: string, enum: [EN_ATTENTE, RELUE] }
+                    note: { type: integer, nullable: true, minimum: 0, maximum: 20 }
+                    commentaire: { type: string, nullable: true }
+        "404": { $ref: "#/components/responses/Erreur" }
+
+  /api/etudiants/{id}/relectures:
+    get:
+      summary: Liste des relectures en attente pour un étudiant relecteur (EF18, Must)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        "200":
+          description: Liste des exercices assignés à cet étudiant et non encore relus
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  required: [exerciceId, lien, statut]
+                  properties:
+                    exerciceId: { type: integer, format: int64 }
+                    lien: { type: string, format: uri }
+                    statut: { type: string, enum: [EN_ATTENTE, RELUE] }
+        "404": { $ref: "#/components/responses/Erreur" }
+
+components:
+  schemas:
+    Erreur:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          description: Identifiant stable, en majuscules. Exemple - CODE_EXPIRE
+        message:
+          type: string
+          description: Phrase lisible par un humain, en français
+  responses:
+    Erreur:
+      description: |
+        Format d'erreur imposé pour TOUTES les erreurs, sans exception.
+        Une stack trace, un corps vide ou la page d'erreur par défaut de Spring
+        valent zéro sur ce critère.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Erreur" }
+          example:
+            code: CODE_EXPIRE
+            message: Le code de présence a expiré.
