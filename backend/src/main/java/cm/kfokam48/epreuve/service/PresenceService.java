@@ -1,5 +1,6 @@
 package cm.kfokam48.epreuve.service;
 
+import cm.kfokam48.epreuve.dto.PresenceManuelleRequest;
 import cm.kfokam48.epreuve.dto.PresenceRequest;
 import cm.kfokam48.epreuve.dto.PresenceResponse;
 import cm.kfokam48.epreuve.entity.Etudiant;
@@ -10,6 +11,7 @@ import cm.kfokam48.epreuve.exception.CodeExpireException;
 import cm.kfokam48.epreuve.exception.CodeInconnuException;
 import cm.kfokam48.epreuve.exception.DejaPresentException;
 import cm.kfokam48.epreuve.exception.ResourceNotFoundException;
+import cm.kfokam48.epreuve.exception.SessionNotFoundException;
 import cm.kfokam48.epreuve.exception.TropDeTentativesException;
 import cm.kfokam48.epreuve.repository.EtudiantRepository;
 import cm.kfokam48.epreuve.repository.PresenceRepository;
@@ -84,6 +86,40 @@ public class PresenceService {
         // 8. Succès → remise à zéro du compteur
         compteurTentativesService.reinitialiser(etudiantId);
 
+        return new PresenceResponse(
+                enregistree.getId(),
+                session.getId(),
+                etudiant.getId(),
+                enregistree.getSource().name());
+    }
+
+    /**
+     * EF6 (décision A5) : le formateur ajoute manuellement une présence (Q14).
+     * Pas de code requis, pas de vérification d'expiration (le formateur agit en admin),
+     * pas de compteur RG3. Source forcée à FORMATEUR (RG13).
+     * Ordre des vérifications : session → étudiant → doublon.
+     */
+    public PresenceResponse ajouterPresenceManuelle(Long sessionId, PresenceManuelleRequest request) {
+        // 1. La session (ressource cible du chemin) doit exister
+        Session session = sessionRepository.findById(sessionId)
+                .orElseThrow(SessionNotFoundException::new);
+
+        // 2. L'étudiant doit exister
+        Etudiant etudiant = etudiantRepository.findById(request.etudiantId())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        CODE_ETUDIANT_INCONNU, "L'étudiant demandé n'existe pas."));
+
+        // 3. RG2 : déjà présent → 409 (sans compteur : il n'y en a pas ici)
+        presenceRepository.findBySessionIdAndEtudiantId(sessionId, request.etudiantId())
+                .ifPresent(presence -> {
+                    throw new DejaPresentException();
+                });
+
+        // 4-5. Création de la présence, source forcée à FORMATEUR (RG13), ajouteeAt explicite
+        Presence presence = new Presence(session, etudiant, SourcePresence.FORMATEUR, LocalDateTime.now());
+        Presence enregistree = presenceRepository.save(presence);
+
+        // 6.
         return new PresenceResponse(
                 enregistree.getId(),
                 session.getId(),
