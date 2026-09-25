@@ -11,6 +11,17 @@
 
 **Fait** : création de `backend/src/main/resources/db/migration/V1__init.sql` avec les 6 tables du diagramme D2 : `promotion`, `etudiant`, `session`, `presence`, `exercice`, `relecture`. Contraintes `UNIQUE` (présence unique par session/étudiant, un seul exercice par couple, une seule relecture par exercice), `CHECK` (source `ETUDIANT`/`FORMATEUR`, statut `EN_ATTENTE`/`RELUE`, note 0–20), index sur les clés étrangères, `relecteur_id` nullable.
 
+
+**Jalon** : commit vide `[JALON] analyse` poussé après validation des 4 livrables (CDC, contrat, diagrammes, journal), et **avant** tout commit de code.
+### Ticket #9 — `POST /api/relectures/{id}`
+
+**Fait** : entité `Relecture` (mappée sur `V1__init.sql` : `@OneToOne` sur `exercice_id` avec `UNIQUE`, `relecteur_id` NOT NULL, `note` CHECK 0–20, `commentaire` TEXT), `RelectureRepository`, DTO records (`RelectureRequest`, `RelectureResponse`), 3 exceptions (`NoteInvalideException` 400, `AutoRelectureException` 403, `RelectureDejaRendueException` 409), `RelectureService` (transactionnel : création de la relecture + passage de l'exercice à `RELUE`), `RelectureController` (`@PostMapping("/{id}")` → `200 OK`, pas `201`).
+
+**Bloqué** : environ 15 min sur le mapping `NOTE_INVALIDE` vs `VALIDATION_ECHOUEE` — le `@Min/@Max` du DTO déclenchait le handler global (intouchable) au lieu de renvoyer `NOTE_INVALIDE` comme exigé par le contrat. Résolu par un handler local au `RelectureController` (fichier créé par ce ticket), qui mappe les erreurs de validation sur `note` vers `NOTE_INVALIDE`, sans toucher au `GlobalExceptionHandler`. Également signalé : Jackson convertit silencieusement `15.5` en `15` (coercition float→int par défaut), impossible à corriger sans toucher à la config Jackson (interdit).
+
+**IA** : m'a généré les 9 nouveaux fichiers. J'ai testé : nominal (`200` + `RELUE`), note 25 (`400 NOTE_INVALIDE`), note non entière (`400 NOTE_INVALIDE` — via handler local), exercice inconnu (`404 EXERCICE_INCONNU`), relecture déjà rendue (`409 RELECTURE_DEJA_RENDUE`), auto-relecture forcée en BDD (`403 AUTO_RELECTURE`). Tout conforme (sauf la coercition Jackson, signalée).
+
+**Commit** : `feat(relectures): implemente POST /api/relectures/{id} (Closes #9)
 **Bloqué** : environ 15 min sur le cache Docker — la première exécution de `docker compose up` ne voyait pas le fichier de migration. Résolu avec `docker compose up -d --build backend` (reconstruction de l'image). Flyway a ensuite appliqué la migration : `flyway_schema_history.version = 1, success = t`, 6 tables + la table d'historique.
 
 **IA** : m'a généré le SQL initial à partir du diagramme D2. J'ai vérifié manuellement la correspondance exacte entre les colonnes du SQL et les attributs du diagramme, et j'ai testé que Flyway appliquait bien la migration dans un conteneur neuf (`docker compose down -v` puis `up`).
@@ -70,5 +81,6 @@
 **IA** : m'a généré les 3 nouveaux fichiers et modifié 2 fichiers existants (ajouts seuls). J'ai testé : nominal (`200` + nouveau relecteur), relecteur = auteur (`400 RELECTEUR_INVALIDE`), exercice inconnu (`404 EXERCICE_INCONNU`), relecteur inconnu (`404 ETUDIANT_INCONNU`), exercice déjà `RELUE` (`409 RELECTURE_DEJA_COMMENCEE`), non-régression de `PATCH /api/exercices/{id}` (#7). Tout conforme.
 
 **Commit** : `feat(exercices): implemente PATCH /api/exercices/{id}/relecteur (Closes #8)`
+
 
 ---
