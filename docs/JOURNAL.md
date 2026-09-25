@@ -35,3 +35,14 @@ Format : **Fait** / **Bloqué (durée)** / **IA (demandé + vérifié)**.
 **Commit** : `feat(etudiants): implemente GET /api/etudiants/{id}/relectures (Closes #12)`
 
 ---
+### Ticket #13 — `GET /api/promotions` + `GET /api/promotions/{id}/etudiants`
+
+**Fait** : DTO records (`PromotionResponse`, `EtudiantResponse`), `PromotionService` (liste des promotions triées par nom, liste des étudiants d'une promotion triés par nom, `PromotionNotFoundException` si la promotion n'existe pas), `PromotionController` (`@GetMapping` et `@GetMapping("/{id}/etudiants")`).
+
+**Bloqué** : environ 5 min sur une erreur de compilation (`Promotion::getNom` utilisé par erreur dans le stream des étudiants). Résolu en utilisant `Etudiant::getNom` avec un import propre.
+
+**IA** : m'a généré les 4 nouveaux fichiers. J'ai testé : `GET /api/promotions` (`200` + liste triée), `GET /api/promotions/1/etudiants` (`200` + liste triée), promotion inconnue (`404 PROMOTION_INCONNUE`). Tout conforme.
+
+**Commit** : `feat(promotions): implemente GET /api/promotions et /{id}/etudiants (Closes #13)`
+
+---
