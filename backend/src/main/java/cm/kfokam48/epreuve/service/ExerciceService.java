@@ -1,14 +1,18 @@
 package cm.kfokam48.epreuve.service;
 
+import cm.kfokam48.epreuve.dto.ExerciceLienResponse;
 import cm.kfokam48.epreuve.dto.ExerciceRequest;
 import cm.kfokam48.epreuve.dto.ExerciceResponse;
+import cm.kfokam48.epreuve.dto.RemplacementLienRequest;
 import cm.kfokam48.epreuve.entity.Etudiant;
 import cm.kfokam48.epreuve.entity.Exercice;
 import cm.kfokam48.epreuve.entity.Presence;
 import cm.kfokam48.epreuve.entity.Session;
 import cm.kfokam48.epreuve.entity.StatutExercice;
 import cm.kfokam48.epreuve.exception.ExerciceDejaDeposeException;
+import cm.kfokam48.epreuve.exception.ExerciceNotFoundException;
 import cm.kfokam48.epreuve.exception.LienInvalideException;
+import cm.kfokam48.epreuve.exception.RelectureDejaCommenceeException;
 import cm.kfokam48.epreuve.exception.ResourceNotFoundException;
 import cm.kfokam48.epreuve.exception.SessionNotFoundException;
 import cm.kfokam48.epreuve.repository.EtudiantRepository;
@@ -115,5 +119,35 @@ public class ExerciceService {
         Collections.shuffle(candidats);
         Long relecteurId = candidats.get(0);
         return etudiantRepository.findById(relecteurId).orElse(null);
+    }
+
+    /**
+     * EF8 (décision A3) : l'étudiant remplace le lien de son exercice.
+     * RG12 : refus si la relecture a déjà commencé (statut RELUE) → 409.
+     * L'exercice garde son statut EN_ATTENTE et son relecteur (aucune réassignation).
+     * Ordre des vérifications : exercice → statut → lien.
+     */
+    public ExerciceLienResponse remplacerLien(Long exerciceId, RemplacementLienRequest request) {
+        // 1. L'exercice visé doit exister
+        Exercice exercice = exerciceRepository.findById(exerciceId)
+                .orElseThrow(ExerciceNotFoundException::new);
+
+        // 2. RG12 : la relecture ne doit pas avoir commencé
+        if (exercice.getStatut() == StatutExercice.RELUE) {
+            throw new RelectureDejaCommenceeException();
+        }
+
+        // 3. Le nouveau lien doit être une URI http/https exploitable (méthode de l'issue #6)
+        validerLien(request.lien());
+
+        // 4-5. Mise à jour du lien seul ; statut et relecteur inchangés
+        exercice.setLien(request.lien());
+        Exercice enregistre = exerciceRepository.save(exercice);
+
+        // 6.
+        return new ExerciceLienResponse(
+                enregistre.getId(),
+                enregistre.getStatut().name(),
+                enregistre.getLien());
     }
 }
