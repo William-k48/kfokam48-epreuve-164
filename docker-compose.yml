@@ -1,0 +1,55 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: epreuve-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-epreuve}
+      POSTGRES_USER: ${POSTGRES_USER:-epreuve}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-epreuve}
+    volumes:
+      - epreuve_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U epreuve -d epreuve"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - epreuve-net
+    # Port interne 5432 NON exposé sur la machine hôte (imposé par le sujet)
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: epreuve-backend
+    ports:
+      - "8085:8085"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/epreuve
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-epreuve}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-epreuve}
+      SPRING_PROFILES_ACTIVE: dev
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - epreuve-net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: epreuve-frontend
+    ports:
+      - "4200:4200"
+    depends_on:
+      - backend
+    networks:
+      - epreuve-net
+
+volumes:
+  epreuve_pgdata:
+
+networks:
+  epreuve-net:
+    driver: bridge
