@@ -1,8 +1,10 @@
 package cm.kfokam48.epreuve.service;
 
 import cm.kfokam48.epreuve.dto.ExerciceLienResponse;
+import cm.kfokam48.epreuve.dto.ExerciceRelecteurResponse;
 import cm.kfokam48.epreuve.dto.ExerciceRequest;
 import cm.kfokam48.epreuve.dto.ExerciceResponse;
+import cm.kfokam48.epreuve.dto.ReassignationRelecteurRequest;
 import cm.kfokam48.epreuve.dto.RemplacementLienRequest;
 import cm.kfokam48.epreuve.entity.Etudiant;
 import cm.kfokam48.epreuve.entity.Exercice;
@@ -12,6 +14,7 @@ import cm.kfokam48.epreuve.entity.StatutExercice;
 import cm.kfokam48.epreuve.exception.ExerciceDejaDeposeException;
 import cm.kfokam48.epreuve.exception.ExerciceNotFoundException;
 import cm.kfokam48.epreuve.exception.LienInvalideException;
+import cm.kfokam48.epreuve.exception.RelecteurInvalideException;
 import cm.kfokam48.epreuve.exception.RelectureDejaCommenceeException;
 import cm.kfokam48.epreuve.exception.ResourceNotFoundException;
 import cm.kfokam48.epreuve.exception.SessionNotFoundException;
@@ -149,5 +152,41 @@ public class ExerciceService {
                 enregistre.getId(),
                 enregistre.getStatut().name(),
                 enregistre.getLien());
+    }
+
+    /**
+     * EF11 (décision A2) : le formateur réassigne le relecteur d'un exercice en attente.
+     * Le relecteur ne peut pas être l'auteur. Pas de vérification de présence à la session.
+     * Ordre des vérifications : exercice → statut → relecteur → auteur.
+     */
+    public ExerciceRelecteurResponse reassignerRelecteur(Long exerciceId, ReassignationRelecteurRequest request) {
+        // 1. L'exercice visé doit exister
+        Exercice exercice = exerciceRepository.findById(exerciceId)
+                .orElseThrow(ExerciceNotFoundException::new);
+
+        // 2. RG12 : pas de réassignation après le début de la relecture
+        if (exercice.getStatut() == StatutExercice.RELUE) {
+            throw new RelectureDejaCommenceeException();
+        }
+
+        // 3. Le nouveau relecteur doit exister
+        Etudiant relecteur = etudiantRepository.findById(request.relecteurId())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        CODE_ETUDIANT_INCONNU, "L'étudiant demandé n'existe pas."));
+
+        // 4. Le relecteur ne peut pas être l'auteur
+        if (relecteur.getId().equals(exercice.getEtudiant().getId())) {
+            throw new RelecteurInvalideException();
+        }
+
+        // 5-6. Mise à jour du relecteur seul ; statut inchangé
+        exercice.setRelecteur(relecteur);
+        Exercice enregistre = exerciceRepository.save(exercice);
+
+        // 7.
+        return new ExerciceRelecteurResponse(
+                enregistre.getId(),
+                enregistre.getStatut().name(),
+                enregistre.getRelecteur().getId());
     }
 }

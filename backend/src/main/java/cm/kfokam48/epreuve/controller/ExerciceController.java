@@ -1,8 +1,10 @@
 package cm.kfokam48.epreuve.controller;
 
 import cm.kfokam48.epreuve.dto.ExerciceLienResponse;
+import cm.kfokam48.epreuve.dto.ExerciceRelecteurResponse;
 import cm.kfokam48.epreuve.dto.ExerciceRequest;
 import cm.kfokam48.epreuve.dto.ExerciceResponse;
+import cm.kfokam48.epreuve.dto.ReassignationRelecteurRequest;
 import cm.kfokam48.epreuve.dto.RemplacementLienRequest;
 import cm.kfokam48.epreuve.service.ExerciceService;
 import jakarta.validation.Valid;
@@ -44,6 +46,18 @@ public class ExerciceController {
             @PathVariable Long id,
             @Valid @RequestBody RemplacementLienRequest request) {
         ExerciceLienResponse response = exerciceService.remplacerLien(id, request);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * EF11 (décision A2) — PATCH /api/exercices/{id}/relecteur : réassignation manuelle
+     * du relecteur par le formateur. Retourne 200 OK, pas 201.
+     */
+    @PatchMapping("/{id}/relecteur")
+    public ResponseEntity<ExerciceRelecteurResponse> reassignerRelecteur(
+            @PathVariable Long id,
+            @Valid @RequestBody ReassignationRelecteurRequest request) {
+        ExerciceRelecteurResponse response = exerciceService.reassignerRelecteur(id, request);
         return ResponseEntity.ok(response);
     }
 }
