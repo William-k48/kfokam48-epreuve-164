@@ -13,6 +13,18 @@
 
 **Jalon** : commit vide `[JALON] analyse` poussé après validation des 4 livrables (CDC, contrat, diagrammes, journal), et **avant** tout commit de code.
 
+### Ticket #14 — Données de démo + 2 tests B6 + README
+
+**Fait** : `DataInitializer` (charge 1 promotion, 10 étudiants, 1 session ouverte avec code `DEMO01`, des présences et des exercices déjà relus — uniquement si la base est vide, donc idempotent), test unitaire `PresenceServiceTest` (3 tests Mockito sur RG1 : code expiré, code inconnu, cas nominal), test d'intégration `PresenceControllerTest` (2 tests sur `POST /api/presences` avec H2 et profil `test`), README d'installation mis à jour (frontend React + Vite justifié en une ligne, `docker compose up`, alternative 3 commandes, endpoints principaux, tests B6, procédure testée depuis un clone vierge).
+
+**Bloqué** : environ 10 min sur le nom du test d'intégration — le ticket disait `PresenceControllerIT`, mais Surefire ignore `*IT` avec `./mvnw test` et modifier le `pom.xml` était interdit. Renommé `PresenceControllerTest` (écart justifié, signalé). Vérifié : `./mvnw test` → 5 tests verts (3 unitaires + 2 d'intégration).
+
+**IA** : m'a généré les 3 nouveaux fichiers et modifié le README. J'ai testé : `./mvnw test` → `BUILD SUCCESS` (5/5), `docker compose down -v` puis `up` → données de démo chargées (1 promo, 10 étudiants, session `DEMO01` active), flux réel (marquer une présence, consulter le tableau), idempotence (redémarrage backend → pas de doublon). Tout conforme.
+
+**Commit** : `feat(demo): donnees de demo, tests B6 et README (Closes #14)`
+
+**Jalon** : commit vide `[JALON] v0.1` posé après le merge de la dernière issue et stabilisation de `main`.
+
 ### Ticket #11 — `GET /api/etudiants/{id}/exercices`
 
 **Fait** : DTO `ExerciceEtudiantResponse` (record : `id`, `sessionId`, `lien`, `statut`, `note` nullable, `commentaire` nullable), `EtudiantService` (liste les exercices de l'étudiant, joint la `Relecture` si elle existe, **n'expose jamais le relecteur** — RG7), `EtudiantController` (`@GetMapping("/{id}/exercices")`). Ajout dans `ExerciceRepository` (`findByEtudiantId`).
@@ -130,5 +142,6 @@ feat/13-promotions-etudiants
 **IA** : m'a généré les 3 nouveaux fichiers et modifié 2 fichiers existants (ajouts seuls). J'ai testé : nominal (`200` + nouveau relecteur), relecteur = auteur (`400 RELECTEUR_INVALIDE`), exercice inconnu (`404 EXERCICE_INCONNU`), relecteur inconnu (`404 ETUDIANT_INCONNU`), exercice déjà `RELUE` (`409 RELECTURE_DEJA_COMMENCEE`), non-régression de `PATCH /api/exercices/{id}` (#7). Tout conforme.
 
 **Commit** : `feat(exercices): implemente PATCH /api/exercices/{id}/relecteur (Closes #8)
+
 
 ---
