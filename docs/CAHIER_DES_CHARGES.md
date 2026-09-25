@@ -2,7 +2,7 @@
 
 Auteur : KF48-164  ·  Version 2  ·  Frontend choisi : React (avec Vite), parce que l'application se limite à trois écrans CRUD sans besoin de SSR ni de routing complexe, et que React permet une mise en œuvre rapide avec une couche API centralisée et une gestion d'état locale simple.
 
-**Changements depuis la v1 :** ajout des opérations d'API libres manquantes (liste des étudiants, ajout manuel de présence, remplacement de lien, réassignation, consultation des relectures), rééquilibrage des priorités Must/Should/Could, et deux nouvelles zones d'ombre tranchées (ajout manuel de présence, notification du relecteur).
+**Changements depuis la v1 :** ajout des opérations d'API libres manquantes (liste des étudiants, ajout manuel de présence, remplacement de lien, réassignation, consultation des relectures), rééquilibrage des priorités Must/Should/Could, deux nouvelles zones d'ombre tranchées (ajout manuel de présence, notification du relecteur), et démarrage par Docker Compose avec ports fixes (backend 8085, frontend 4200).
 
 ## 1. Contexte et objectif
 
@@ -114,7 +114,7 @@ L'objectif de l'application est de fournir un outil unique permettant :
 | **ENF2** | L'application doit supporter une promotion d'environ **50 étudiants** (hypothèse de dimensionnement) et 10 sessions sans dégradation notable | Jeu de données de test avec 50 étudiants × 10 sessions ; vérification que le tableau se charge en moins d'1 s |
 | **ENF3** | L'interface doit être utilisable sur mobile (navigateur), sans application native | Test manuel sur un écran de 375 px de large ; les 3 écrans restent lisibles et utilisables |
 | **ENF4** | Le code source doit être versionné sur Git, avec un historique lisible | Inspection de l'historique : commits atomiques, branches par ticket, PR liées aux issues |
-| **ENF5** | Le projet doit démarrer depuis un clone vierge en 3 commandes maximum | Test depuis un clone neuf : `mvnw spring-boot:run` (backend), `npm install && npm run dev` (frontend), données de démo chargées |
+| **ENF5** | Le projet doit démarrer depuis un clone vierge en une commande (`docker compose up`) ou 3 commandes maximum | Test depuis un clone neuf : `docker compose up` ; vérification que les 3 conteneurs démarrent et que les données de démo sont chargées |
 | **ENF6** | Les erreurs de l'API doivent respecter un format unique `{ code, message }`, y compris sur les opérations libres | Appel volontairement erroné sur chaque endpoint, imposé ou libre ; vérification du format de la réponse |
 | **ENF7** | Aucun secret (mot de passe, clé, token) ne doit être commité | Inspection de l'historique Git ; présence d'un `.gitignore` couvrant `.env`, `*.pem`, `*.key` |
 | **ENF8** | Le schéma de base de données doit être versionné par migrations | Présence de fichiers `V1__*.sql`, `V2__*.sql` dans `backend/src/main/resources/db/migration/` |
@@ -179,11 +179,11 @@ L'objectif de l'application est de fournir un outil unique permettant :
 
 ### Démarrage
 
-- **Docker Compose** : un `docker-compose.yml` à la racine lance PostgreSQL + backend + frontend en une commande (`docker compose up`).
-- **Alternative 3 commandes** (documentée dans le README) :
-  1. `cd backend && ./mvnw spring-boot:run`
-  2. `cd frontend && npm install && npm run dev`
-  3. Ouvrir `http://localhost:5173`
+- **Démarrage par Docker Compose** : un `docker-compose.yml` à la racine lance PostgreSQL + backend + frontend en une seule commande (`docker compose up`). Le backend écoute sur le port **8085**, le frontend sur le port **4200**, PostgreSQL sur le port interne **5432** (non exposé sur la machine hôte).
+- **Alternative 3 commandes** (documentée dans le README, pour un poste sans Docker) :
+  1. `cd backend && ./mvnw spring-boot:run -Dspring-boot.run.arguments=--server.port=8085`
+  2. `cd frontend && npm install && npm run dev -- --port 4200`
+  3. Ouvrir `http://localhost:4200`
 - **Données de démonstration** : un `DataInitializer` (ou un script Flyway `V99__demo_data.sql`) charge une promotion, une dizaine d'étudiants, une session ouverte et quelques exercices au premier démarrage. Objectif : le correcteur ouvre l'app et peut tout tester immédiatement.
 - **README testé depuis un clone vierge** : la procédure de démarrage est validée sur un poste neuf avant le rendu final (étape 4).
 
