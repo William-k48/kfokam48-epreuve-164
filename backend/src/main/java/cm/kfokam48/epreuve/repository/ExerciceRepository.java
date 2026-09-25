@@ -20,4 +20,6 @@ public interface ExerciceRepository extends JpaRepository<Exercice, Long> {
     long countByRelecteurIdAndStatut(Long relecteurId, StatutExercice statut);
 
     List<Exercice> findByEtudiantId(Long etudiantId);
+
+    List<Exercice> findByRelecteurIdAndStatut(Long relecteurId, StatutExercice statut);
 }
