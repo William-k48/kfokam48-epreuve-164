@@ -1,3 +1,17 @@
+### Issue #48 — Commit 3 : écran d'accueil
+
+**Fait** : `App.jsx` — accueil en grille de **3 colonnes** (desktop), 1 colonne (mobile, ≤768 px), auto-fit (tablette) : chaque carte contient une **icône colorée par rôle** (formateur = primaire bleu, étudiant = succès vert, relecteur = tertiaire ocre, pastille 56 px), titre `<span class=carte-titre>` (style titre), description 1–2 lignes, et un « bouton » **Accéder** (span stylé `.bouton` avec `pointer-events: none` — c'est la carte entière qui est le lien `Link`, aucun lien imbriqué). Hover : élévation `translateY(-3px)` + `box-shadow` élevée + le pseudo-bouton fonce (par couleur de rôle). Libellés des écrans et routes **inchangés**. Styles ajoutés à `App.css` (`.accueil-*`).
+
+**Pas touché (logique métier)** : `Link`/routes, données affichées, aucun appel API (l'accueil n'en fait aucun), tests.
+
+**Bloqué** : aucun blocage significatif.
+
+**IA** : a refondu l'accueil et ses styles. Vérifié : `npm run build` → ✓ built in 1.91s, `npx vitest run` → 21/21, `npm run lint` → 0 erreur.
+
+**Commit** : `feat(ui): refait l'ecran d'accueil`
+
+---
+
 ### Issue #48 — Commit 2 : layout global (Sidebar + Header)
 
 **Fait** : nouveau `src/components/Sidebar.jsx` (logo KFOKAM 48 en haut à gauche, hauteur 40 px, image importée — jamais recréé en CSS/SVG ; navigation NavLink avec état actif stylé fond primaire-clair + barre interne, icônes SVG inline maison — choix documenté : aucune dépendance ajoutée à package.json ; bas de sidebar « Invité » + bouton « Déconnexion » désactivé, aucune auth inventée ; mobile : drawer overlay avec voile, fermeture par clic extérieur, Échap ou navigation), `src/components/Header.jsx` (fil d'Ariane « Accueil › Écran » dérivé de la route via useLocation — libellés d'écrans inchangés, cloche de notifications décorative désactivée avec aria-label, hamburger mobile), `src/layouts/AppLayout.jsx` (Sidebar + Header + `<Outlet/>`, état du drawer local au layout). `App.jsx` : les 4 routes sont **inchangées**, simplement enveloppées dans `<Route element={<AppLayout />}>`. `App.css` : styles sidebar (sticky 100svh, largeur variable 250px), header (sticky 64px), fil d'Ariane, voile, responsive (sidebar fixed translateX(-100%) sous 768 px, hamburger visible ; tablette 769–1024 px padding réduit).

@@ -487,6 +487,58 @@
   border: 1px solid var(--secondaire-bordure);
 }
 
+/* ---------- Accueil (commit 3) ---------- */
+.accueil-cartes {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.accueil-carte {
+  gap: 12px;
+}
+
+.accueil-icone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--rayon-grand);
+}
+
+.accueil-icone-formateur {
+  color: var(--primaire-fonce);
+  background: var(--primaire-clair);
+}
+
+.accueil-icone-etudiant {
+  color: var(--succes-fonce);
+  background: var(--succes-clair);
+}
+
+.accueil-icone-relecteur {
+  color: var(--tertiaire-fonce);
+  background: var(--tertiaire-clair);
+}
+
+/* Le « bouton » Accéder est un span dans le lien (pas d'action imbriquée) */
+.accueil-acceder {
+  align-self: flex-start;
+  margin-top: auto;
+  pointer-events: none;
+}
+
+.accueil-carte:hover .accueil-acceder-formateur {
+  background: var(--primaire-fonce);
+}
+
+.accueil-carte:hover .accueil-acceder-etudiant {
+  background: var(--succes-fonce);
+}
+
+.accueil-carte:hover .accueil-acceder-relecteur {
+  background: var(--tertiaire-fonce);
+}
+
 /* ---------- Divers ---------- */
 .retour {
   display: inline-block;
@@ -545,5 +597,15 @@
 @media (min-width: 769px) and (max-width: 1024px) {
   .contenu {
     padding: 24px;
+  }
+
+  .accueil-cartes {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .accueil-cartes {
+    grid-template-columns: 1fr;
   }
 }
