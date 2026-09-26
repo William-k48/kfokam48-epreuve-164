@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Contrat d'API — Épreuve finale KFOKAM48 (matricule KF48-164)
-  version: "1.0"
+  version: "1.1"
   description: |
     Contrat d'API de l'application de présence et de relecture KFOKAM48.
 
@@ -11,6 +11,13 @@ info:
     Les 7 opérations libres ajoutées en dessous couvrent les besoins exprimés
     dans le cahier des charges (docs/CAHIER_DES_CHARGES.md), sections 4 et 8 (B2),
     et les décisions A2, A3, A5 de la section 7.
+
+    **v1.1 (itération 3, décision A9)** : chaque exercice est relu par DEUX
+    relecteurs différents. La note retenue d'un exercice est la moyenne de ses
+    relectures rendues ; elle est marquée `noteProvisoire: true` tant qu'un seul
+    des deux relecteurs a rendu. Les 5 opérations imposées conservent leurs
+    chemins, verbes, codes de statut et format d'erreur à la lettre : seules les
+    descriptions et les champs documentés des réponses évoluent.
 
 servers:
   - url: http://localhost:8080
@@ -83,6 +90,10 @@ paths:
   /api/exercices:
     post:
       summary: Un étudiant dépose le lien de son exercice
+      description: |
+        v1.1 (RG6 v2) : au dépôt, le système assigne automatiquement deux
+        relecteurs distincts (ou un seul s'il n'y a qu'un présent hors auteur).
+        La réponse reste `{ id, statut }` conformément au contrat imposé.
       requestBody:
         required: true
         content:
@@ -111,6 +122,13 @@ paths:
   /api/relectures/{id}:
     post:
       summary: Un relecteur rend sa note et son commentaire
+      description: |
+        v1.1 (décision A10, sans auth) : l'appel émane du relecteur assigné de
+        l'exercice qui n'a pas encore rendu sa relecture. Après la PREMIÈRE
+        relecture rendue, l'exercice reste `EN_ATTENTE` et sa note (moyenne des
+        relectures rendues) est provisoire ; après la SECONDE, l'exercice passe
+        `RELUE` et la note devient définitive (moyenne des deux). Toute
+        resoumission quand les deux relectures sont rendues renvoie 409 (RG9).
       parameters:
         - name: id
           in: path
@@ -127,7 +145,27 @@ paths:
                 note: { type: integer, minimum: 0, maximum: 20 }
                 commentaire: { type: string }
       responses:
-        "200": { description: Relecture enregistrée }
+        "200":
+          description: Relecture enregistrée
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [id, exerciceId, note, statut]
+                properties:
+                  id: { type: integer, format: int64 }
+                  exerciceId: { type: integer, format: int64 }
+                  note:
+                    type: integer
+                    minimum: 0
+                    maximum: 20
+                    description: Note de la relecture qui vient d'être rendue
+                  statut:
+                    type: string
+                    enum: [EN_ATTENTE, RELUE]
+                    description: |
+                      EN_ATTENTE après la 1re des 2 relectures (note provisoire),
+                      RELUE après la 2e (note définitive = moyenne des deux).
         "400": { $ref: "#/components/responses/Erreur" }
         "403": { $ref: "#/components/responses/Erreur" }
         "409": { $ref: "#/components/responses/Erreur" }
@@ -135,6 +173,10 @@ paths:
   /api/tableau:
     get:
       summary: Le tableau récapitulatif du formateur
+      description: |
+        v1.1 (RG16/RG17) : la moyenne d'un étudiant est calculée sur les notes
+        retenues de ses exercices (moyenne des relectures rendues, exercice par
+        exercice, notes provisoires incluses).
       parameters:
         - name: promotionId
           in: query
@@ -156,7 +198,10 @@ paths:
                     nom: { type: string }
                     presences: { type: integer }
                     exercicesDeposes: { type: integer }
-                    moyenne: { type: number, nullable: true }
+                    moyenne:
+                      type: number
+                      nullable: true
+                      description: Moyenne des notes retenues (null si aucune note reçue)
                     relecturesEnAttente: { type: integer }
         "404": { $ref: "#/components/responses/Erreur" }
 
@@ -265,6 +310,10 @@ paths:
   /api/exercices/{id}/relecteur:
     patch:
       summary: Le formateur réassigne le relecteur d'un exercice en attente (décision A2, EF11, Should)
+      description: |
+        v1.1 (RG15 v2) : remplace un relecteur qui n'a pas encore rendu sa
+        relecture, ou complète la seconde assignation si l'exercice n'en a
+        qu'une. L'exercice doit être EN_ATTENTE.
       parameters:
         - name: id
           in: path
@@ -288,6 +337,12 @@ paths:
   /api/etudiants/{id}/exercices:
     get:
       summary: Liste des exercices d'un étudiant, avec note et commentaire s'ils sont relus (EF15, Must)
+      description: |
+        v1.1 (décision A9) : `note` est la moyenne des relectures rendues de
+        l'exercice. `noteProvisoire` vaut true tant qu'un seul des deux
+        relecteurs a rendu (sa note est affichée en attendant), false quand les
+        deux ont rendu (note définitive), null tant qu'aucune relecture n'est
+        rendue. RG7 : l'identité des relecteurs n'est jamais exposée.
       parameters:
         - name: id
           in: path
@@ -301,20 +356,37 @@ paths:
               schema:
                 type: array
                 items:
-                  type: object
-                  required: [id, sessionId, lien, statut]
-                  properties:
-                    id: { type: integer, format: int64 }
-                    sessionId: { type: integer, format: int64 }
-                    lien: { type: string, format: uri }
-                    statut: { type: string, enum: [EN_ATTENTE, RELUE] }
-                    note: { type: integer, nullable: true, minimum: 0, maximum: 20 }
-                    commentaire: { type: string, nullable: true }
+                    type: object
+                    required: [id, sessionId, lien, statut]
+                    properties:
+                      id: { type: integer, format: int64 }
+                      sessionId: { type: integer, format: int64 }
+                      lien: { type: string, format: uri }
+                      statut: { type: string, enum: [EN_ATTENTE, RELUE] }
+                      note:
+                        type: integer
+                        nullable: true
+                        minimum: 0
+                        maximum: 20
+                        description: Moyenne des relectures rendues (null si aucune)
+                      noteProvisoire:
+                        type: boolean
+                        nullable: true
+                        description: |
+                          true tant qu'un seul des 2 relecteurs a rendu (note
+                          affichée en attendant), false quand les deux ont rendu,
+                          null si aucune relecture n'est rendue.
+                      commentaire: { type: string, nullable: true }
         "404": { $ref: "#/components/responses/Erreur" }
 
   /api/etudiants/{id}/relectures:
     get:
       summary: Liste des relectures en attente pour un étudiant relecteur (EF18, Must)
+      description: |
+        v1.1 (RG5 v2) : liste les exercices assignés à cet étudiant (parmi les 2
+        relecteurs possibles par exercice) pour lesquels il n'a PAS encore rendu
+        sa relecture. Un exercice dont l'autre relecteur a déjà rendu reste
+        listé ici jusqu'à ce que ce relecteur rende à son tour.
       parameters:
         - name: id
           in: path

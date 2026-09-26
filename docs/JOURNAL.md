@@ -1,3 +1,15 @@
+### Issue #44 — Contrat d'API v1.1 : flag provisoire sur la note
+
+**Fait** : `api/contrat.yaml` passé en version **1.1** : description d'en-tête décrivant le passage à 2 relecteurs (décision A9) ; `GET /api/etudiants/{id}/exercices` documente `note` (moyenne des relectures rendues) et le nouveau champ **`noteProvisoire`** (boolean nullable : true tant qu'un seul des 2 relecteurs a rendu, false quand les deux ont rendu, null si aucune relecture) ; `POST /api/relectures/{id}` décrit le statut de retour (`EN_ATTENTE` après la 1re des 2 relectures, `RELUE` après la 2e avec note = moyenne) et la règle d'identification du relecteur (décision A10) ; descriptions v1.1 ajoutées sur `/api/exercices` (2 relecteurs assignés au dépôt), `/api/tableau` (moyenne sur notes retenues), `/api/exercices/{id}/relecteur` (réassignation ou complément, RG15 v2) et `/api/etudiants/{id}/relectures` (exercices où CE relecteur n'a pas encore rendu). Chemins, verbes, codes de statut et format d'erreur des 5 opérations imposées **inchangés** (B2).
+
+**Bloqué** : aucun blocage significatif. Vérification syntaxique : le YAML a été rechargé avec js-yaml (installé sans l'ajouter à package.json) → parse OK, 12 chemins, `noteProvisoire` présent ; un défaut de jointure `type: array items:` introduit pendant l'édition a été détecté et corrigé avant commit.
+
+**IA** : m'a rédigé les modifications du contrat. J'ai vérifié que les 5 opérations imposées gardent leurs chemins/verbes/codes/format d'erreur à la lettre, que le champ `noteProvisoire` est nullable et aligné sur la décision A9, et que le YAML parse sans erreur.
+
+**Commit** : `api(contrat): ajoute le flag provisoire sur la note (#44)`
+
+---
+
 ### Issue #43 — Analyse mise à jour : passage à 2 relecteurs
 
 **Fait** : mise à jour complète des livrables d'analyse pour le changement de besoin (décision A9) : CAHIER_DES_CHARGES.md (note « changements depuis la v2 », RG5 v2 « deux relecteurs différents + moyenne + provisoire », RG6 v2 « deux relecteurs distincts parmi les présents », RG9 v2 « RELUE quand les deux ont rendu », RG14/RG15 v2, EF9/EF12/EF15 v2, nouvelles décisions A9 et A10 en section 7, B5 « V3 ajoutée, jamais modifiée »), diagramme D2 (nouvelle entité `AssignationRelecture` 1..2 par exercice, Exercice sans plus de `relecteurId`, Relecture 0..2 avec UNIQUE(exercice_id, relecteur_id), correspondances RG et migrations à jour) et diagramme D4 (la 1re relecture rendue ne fait plus passer l'exercice RELUE : auto-transition EN_ATTENTE avec note provisoire ; RELUE à la 2e). Nouveau diagramme D5 `d5-sequence-relecture.md` : séquence de rendu de relecture à 2 relecteurs avec branches 200 provisoire / 200 définitive (moyenne) / 404 / 400 / 403 / 409, et règle d'identification du relecteur (décision A10, sans auth).
