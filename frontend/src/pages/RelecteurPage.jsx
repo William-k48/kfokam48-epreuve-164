@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import EmptyState from '../components/EmptyState.jsx'
 import {
   getEtudiants,
   getPromotions,
@@ -23,6 +23,18 @@ function validerNote(valeur) {
   return Number.isInteger(note) && note >= 0 && note <= 20
 }
 
+/** Illustration de l'état vide (tasse de café, SVG inline — mission #48). */
+function IllustrationVide() {
+  return (
+    <svg viewBox="0 0 64 64" width="72" height="72" aria-hidden="true" fill="none"
+      stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14 26h28v14a10 10 0 01-10 10h-8a10 10 0 01-10-10V26z" />
+      <path d="M42 30h4a6 6 0 010 12h-4" />
+      <path d="M22 20c0-3 2-3 2-6M30 20c0-3 2-3 2-6" />
+    </svg>
+  )
+}
+
 function FormulaireRelecture({ exerciceId, lien, onRendue }) {
   const [note, setNote] = useState('')
   const [commentaire, setCommentaire] = useState('')
@@ -44,7 +56,10 @@ function FormulaireRelecture({ exerciceId, lien, onRendue }) {
   }
 
   return (
-    <form className="formulaire formulaire-relecture" onSubmit={soumettre}>
+    <form
+      className="formulaire formulaire-relecture carte-bloc"
+      onSubmit={soumettre}
+    >
       <p className="legende">
         Exercice <strong>#{exerciceId}</strong> —{' '}
         <a href={lien} target="_blank" rel="noreferrer">
@@ -79,6 +94,10 @@ function FormulaireRelecture({ exerciceId, lien, onRendue }) {
         type="submit"
         disabled={enCours || !validerNote(note)}
       >
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none"
+          stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M20 6L9 17l-5-5" />
+        </svg>
         {enCours ? 'Envoi…' : 'Rendre la relecture'}
       </button>
       {erreur && (
@@ -140,10 +159,13 @@ function RelecteurPage() {
   }
 
   return (
-    <main className="page">
+    <div className="page">
       <h1>Écran relecteur</h1>
+      <p className="sous-titre">
+        Relisez les exercices qui vous sont assignés, en toute sérénité.
+      </p>
 
-      <section className="section" aria-labelledby="titre-identification">
+      <section className="section carte-bloc" aria-labelledby="titre-identification">
         <h2 id="titre-identification">Qui êtes-vous ?</h2>
 
         {promotionsEnCours && <p>Chargement des promotions…</p>}
@@ -202,28 +224,41 @@ function RelecteurPage() {
       <section className="section" aria-labelledby="titre-relectures">
         <h2 id="titre-relectures">Mes relectures en attente</h2>
 
-        {!identifie && <p>Sélectionnez votre nom pour voir vos relectures.</p>}
+        {!identifie && (
+          <p className="carte-bloc">Sélectionnez votre nom pour voir vos relectures.</p>
+        )}
 
-        {identifie && relecturesEnCours && <p>Chargement…</p>}
+        {identifie && relecturesEnCours && <p className="carte-bloc">Chargement…</p>}
         {identifie && erreurRelectures && (
-          <p className="message erreur" role="alert">
+          <p className="message erreur carte-bloc" role="alert">
             {messageErreur(erreurRelectures, {})}
           </p>
         )}
+
         {identifie && relectures && relectures.length === 0 && (
-          <p>Aucune relecture en attente. Bravo !</p>
+          <div className="carte-bloc">
+            <EmptyState
+              illustration={<IllustrationVide />}
+              titre="Tout est à jour. Reposez-vous !"
+              texte="Aucune relecture en attente pour le moment."
+            />
+          </div>
         )}
 
         {identifie &&
           relectures &&
-          relectures.map((relecture) => (
-            <FormulaireRelecture
-              key={relecture.exerciceId}
-              exerciceId={relecture.exerciceId}
-              lien={relecture.lien}
-              onRendue={relectureRendue}
-            />
-          ))}
+          relectures.length > 0 && (
+            <div className="relectures-liste">
+              {relectures.map((relecture) => (
+                <FormulaireRelecture
+                  key={relecture.exerciceId}
+                  exerciceId={relecture.exerciceId}
+                  lien={relecture.lien}
+                  onRendue={relectureRendue}
+                />
+              ))}
+            </div>
+          )}
 
         {succes && (
           <p className="message succes" role="status">
@@ -231,11 +266,7 @@ function RelecteurPage() {
           </p>
         )}
       </section>
-
-      <Link className="retour" to="/">
-        ← Retour à l&apos;accueil
-      </Link>
-    </main>
+    </div>
   )
 }
 

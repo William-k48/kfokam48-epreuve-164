@@ -1,22 +1,231 @@
+/* ============================================================
+   KFOKAM 48 — styles de l'application
+   Commit 2 (#48) : layout global (sidebar + header) ajouté à la base.
+   ============================================================ */
+
+/* ---------- Sidebar ---------- */
+.sidebar {
+  width: var(--sidebar-largeur);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: var(--fond-carte);
+  border-right: 1px solid var(--bordure);
+  padding: 16px;
+  box-sizing: border-box;
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  z-index: 20;
+}
+
+.sidebar-logo {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 0 12px;
+  border-bottom: 1px solid var(--bordure);
+  margin-bottom: 12px;
+}
+
+.sidebar-logo img {
+  display: block;
+  height: 40px;
+  width: auto;
+}
+
+.sidebar-nav ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: var(--rayon);
+  color: var(--texte-secondaire);
+  text-decoration: none;
+  font-weight: 500;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.sidebar-item:hover {
+  background: var(--primaire-clair);
+  color: var(--primaire-fonce);
+}
+
+.sidebar-item.active {
+  background: var(--primaire-clair);
+  color: var(--primaire-fonce);
+  font-weight: 600;
+  box-shadow: inset 3px 0 0 var(--primaire);
+}
+
+.sidebar-item:focus-visible {
+  outline: 2px solid var(--primaire);
+  outline-offset: 2px;
+}
+
+.sidebar-bas {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--bordure);
+}
+
+.sidebar-utilisateur {
+  font-size: 13px;
+  color: var(--texte-metadonnee);
+}
+
+.bouton-deconnexion {
+  align-self: stretch;
+  justify-content: center;
+}
+
+/* Voile du drawer mobile */
+.sidebar-voile {
+  position: fixed;
+  inset: 0;
+  background: rgba(33, 37, 41, 0.45);
+  z-index: 30;
+}
+
+/* ---------- Header ---------- */
+.header {
+  height: var(--header-hauteur);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  background: var(--fond-carte);
+  border-bottom: 1px solid var(--bordure);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.header-gauche {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header-hamburger {
+  display: none;
+  border: none;
+  background: none;
+  padding: 8px;
+  border-radius: var(--rayon);
+  color: var(--texte);
+  cursor: pointer;
+}
+
+.header-hamburger:hover {
+  background: var(--primaire-clair);
+}
+
+.fil-ariane {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--texte-secondaire);
+}
+
+.fil-ariane a {
+  color: var(--texte-secondaire);
+  text-decoration: none;
+}
+
+.fil-ariane a:hover {
+  color: var(--primaire);
+  text-decoration: underline;
+}
+
+.fil-separateur {
+  color: var(--bordure-forte);
+}
+
+.header-cloche {
+  border: none;
+  background: none;
+  padding: 8px;
+  border-radius: 999px;
+  color: var(--texte-secondaire);
+  cursor: not-allowed;
+}
+
+/* ---------- Layout global ---------- */
+.layout {
+  display: flex;
+  min-height: 100svh;
+}
+
+.layout-principal {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.contenu {
+  flex: 1;
+  padding: 32px;
+  background: var(--fond);
+}
+
+/* ---------- Page / sections ---------- */
 .page {
   width: 100%;
-  max-width: 960px;
+  max-width: 1100px;
   margin: 0 auto;
-  padding: 48px 24px 64px;
+  padding: 0;
 }
 
 .sous-titre {
-  margin: 8px 0 40px;
-  line-height: 1.5;
+  margin: 8px 0 32px;
+  color: var(--texte-secondaire);
+  line-height: 1.6;
 }
 
+.section {
+  margin: 0 0 32px;
+}
+
+.section h2 {
+  margin-bottom: 16px;
+}
+
+/* ---------- Cartes ---------- */
+.carte-bloc {
+  background: var(--fond-carte);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-grand);
+  box-shadow: var(--ombre-carte);
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.carte-bloc h2 {
+  margin-bottom: 16px;
+}
+
+/* Cartes cliquables de l'accueil */
 .cartes {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 16px;
+  gap: 20px;
 }
 
 .carte {
@@ -26,55 +235,37 @@
   height: 100%;
   box-sizing: border-box;
   padding: 24px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-grand);
+  background: var(--fond-carte);
   color: inherit;
   text-decoration: none;
-  transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+  transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .carte:hover {
-  border-color: var(--accent);
-  box-shadow: var(--shadow);
-  transform: translateY(-2px);
+  border-color: var(--primaire);
+  box-shadow: var(--ombre-elevee);
+  transform: translateY(-3px);
 }
 
-.carte:focus-visible,
-.retour:focus-visible {
-  outline: 2px solid var(--accent);
+.carte:focus-visible {
+  outline: 2px solid var(--primaire);
   outline-offset: 2px;
 }
 
 .carte-titre {
   font-size: 20px;
   font-weight: 600;
-  color: var(--text-h);
+  color: var(--texte);
 }
 
 .carte-description {
-  line-height: 1.5;
-  color: var(--text);
+  line-height: 1.6;
+  color: var(--texte-secondaire);
 }
 
-.retour {
-  display: inline-block;
-  margin-top: 24px;
-  color: var(--accent);
-  text-decoration: none;
-}
-
-.retour:hover {
-  text-decoration: underline;
-}
-
-.section {
-  margin-top: 32px;
-}
-
-.section h2 {
-  margin-bottom: 16px;
-}
-
+/* ---------- Formulaires ---------- */
 .formulaire {
   display: flex;
   flex-direction: column;
@@ -89,41 +280,74 @@
 }
 
 .champ label {
+  font-size: 14px;
   font-weight: 600;
-  color: var(--text-h);
+  color: var(--texte);
 }
 
 .champ input,
-.champ select {
+.champ select,
+.champ textarea {
   padding: 10px 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon);
   font: inherit;
-  color: var(--text-h);
-  background: var(--bg);
+  color: var(--texte);
+  background: var(--fond-carte);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .champ input:focus-visible,
-.champ select:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 1px;
-  border-color: var(--accent);
+.champ select:focus-visible,
+.champ textarea:focus-visible {
+  outline: none;
+  border-color: var(--primaire);
+  box-shadow: var(--ombre-focus);
 }
 
+.champ input:disabled,
+.champ select:disabled,
+.champ textarea:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.champ textarea {
+  resize: vertical;
+}
+
+.champ-note input {
+  max-width: 120px;
+}
+
+/* ---------- Boutons ---------- */
 .bouton {
   align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   padding: 10px 20px;
   border: none;
-  border-radius: 8px;
-  background: var(--accent);
-  color: #fff;
+  border-radius: var(--rayon);
+  background: var(--primaire);
+  color: #ffffff;
   font: inherit;
   font-weight: 600;
   cursor: pointer;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
 }
 
 .bouton:hover:enabled {
-  filter: brightness(1.1);
+  background: var(--primaire-fonce);
+}
+
+.bouton:active:enabled {
+  transform: translateY(1px);
+}
+
+.bouton:focus-visible {
+  outline: none;
+  box-shadow: var(--ombre-focus);
 }
 
 .bouton:disabled {
@@ -131,60 +355,54 @@
   cursor: not-allowed;
 }
 
+.bouton.secondaire {
+  background: var(--fond-carte);
+  color: var(--primaire);
+  border: 1px solid var(--primaire);
+}
+
+.bouton.secondaire:hover:enabled {
+  background: var(--primaire-clair);
+}
+
+/* ---------- Messages (erreurs / succès) ---------- */
 .message {
   margin-top: 16px;
   padding: 12px 16px;
-  border-radius: 8px;
-  line-height: 1.5;
+  border-radius: var(--rayon);
+  line-height: 1.6;
 }
 
 .message.erreur {
-  color: var(--erreur);
-  background: var(--erreur-bg);
-  border: 1px solid var(--erreur-border);
+  color: var(--secondaire-fonce);
+  background: var(--secondaire-clair);
+  border: 1px solid var(--secondaire-bordure);
 }
 
 .message.succes {
-  color: var(--succes);
-  background: var(--succes-bg);
-  border: 1px solid var(--succes-border);
+  color: var(--succes-fonce);
+  background: var(--succes-clair);
+  border: 1px solid var(--succes-bordure);
 }
 
-.code-session {
-  font-size: 20px;
+/* Animations d'apparition (désactivées via prefers-reduced-motion, voir index.css) */
+@keyframes apparait {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
-.formulaire-relecture {
-  margin: 16px 0;
-  padding: 16px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
+.message,
+.carte-bloc {
+  animation: apparait 0.2s ease-out;
 }
 
-.legende {
-  margin-bottom: 12px;
-}
-
-.champ-note input {
-  max-width: 120px;
-}
-
-.champ textarea {
-  padding: 10px 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  font: inherit;
-  color: var(--text-h);
-  background: var(--bg);
-  resize: vertical;
-}
-
-.champ textarea:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 1px;
-  border-color: var(--accent);
-}
-
+/* ---------- Tableaux ---------- */
 .champ-tableau {
   max-width: 480px;
   margin-bottom: 16px;
@@ -192,6 +410,9 @@
 
 .tableau-wrapper {
   overflow-x: auto;
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon);
+  background: var(--fond-carte);
 }
 
 .tableau {
@@ -202,23 +423,23 @@
 
 .tableau th,
 .tableau td {
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--border);
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--bordure);
   text-align: left;
 }
 
-.tableau th {
-  color: var(--text-h);
+.tableau thead th {
+  color: var(--texte);
   font-weight: 600;
+  background: var(--fond);
 }
 
 .tableau tbody tr:nth-child(even) {
-  background: var(--accent-bg);
+  background: var(--fond);
 }
 
-.tableau .note-provisoire {
-  font-style: italic;
-  opacity: 0.75;
+.tableau tbody tr:last-child td {
+  border-bottom: none;
 }
 
 .tableau .nombre {
@@ -226,12 +447,385 @@
   font-variant-numeric: tabular-nums;
 }
 
-@media (max-width: 480px) {
-  .page {
-    padding: 32px 16px 48px;
+.tableau .note-provisoire {
+  font-style: italic;
+  opacity: 0.75;
+}
+
+/* ---------- Badges (statuts, notes) ---------- */
+.badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+
+.badge.neutre {
+  color: var(--texte-secondaire);
+  background: var(--fond);
+  border: 1px solid var(--bordure);
+}
+
+.badge.succes {
+  color: var(--succes-fonce);
+  background: var(--succes-clair);
+  border: 1px solid var(--succes-bordure);
+}
+
+.badge.alerte {
+  color: var(--alerte-fonce);
+  background: var(--alerte-clair);
+  border: 1px solid var(--alerte-bordure);
+}
+
+.badge.erreur {
+  color: var(--secondaire-fonce);
+  background: var(--secondaire-clair);
+  border: 1px solid var(--secondaire-bordure);
+}
+
+/* ---------- Accueil (commit 3) ---------- */
+.accueil-cartes {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.accueil-carte {
+  gap: 12px;
+}
+
+.accueil-icone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--rayon-grand);
+}
+
+.accueil-icone-formateur {
+  color: var(--primaire-fonce);
+  background: var(--primaire-clair);
+}
+
+.accueil-icone-etudiant {
+  color: var(--succes-fonce);
+  background: var(--succes-clair);
+}
+
+.accueil-icone-relecteur {
+  color: var(--tertiaire-fonce);
+  background: var(--tertiaire-clair);
+}
+
+/* Le « bouton » Accéder est un span dans le lien (pas d'action imbriquée) */
+.accueil-acceder {
+  align-self: flex-start;
+  margin-top: auto;
+  pointer-events: none;
+}
+
+.accueil-carte:hover .accueil-acceder-formateur {
+  background: var(--primaire-fonce);
+}
+
+.accueil-carte:hover .accueil-acceder-etudiant {
+  background: var(--succes-fonce);
+}
+
+.accueil-carte:hover .accueil-acceder-relecteur {
+  background: var(--tertiaire-fonce);
+}
+
+/* ---------- Écran formateur (commit 4) ---------- */
+.formateur-grille {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 24px;
+  align-items: start;
+}
+
+.formateur-grille .section {
+  margin: 0;
+}
+
+.session-creee {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.bouton-copier {
+  padding: 6px 14px;
+  font-size: 14px;
+}
+
+.session-dates {
+  font-size: 13px;
+  color: var(--texte-metadonnee);
+}
+
+.tableau-actions {
+  text-align: center;
+  width: 48px;
+}
+
+.tableau-oeil {
+  display: inline-flex;
+  color: var(--texte-metadonnee);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 1024px) {
+  .formateur-grille {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- Écran étudiant (commit 5) ---------- */
+.etape-numero {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin-right: 10px;
+  border-radius: 999px;
+  background: var(--primaire);
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.etape-verrouillee {
+  opacity: 0.6;
+}
+
+.etape-verrouillee .etape-numero {
+  background: var(--bordure-forte);
+}
+
+.identification-resume {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.champ-code {
+  font-family: var(--mono);
+  font-size: 20px;
+  letter-spacing: 6px;
+  text-transform: uppercase;
+  max-width: 220px;
+}
+
+.presence-confirmation {
+  animation: apparait 0.25s ease-out;
+}
+
+/* Cartes de notes (exercices de l'étudiant) */
+.notes-cartes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.note-carte {
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--fond);
+}
+
+.note-carte-haut {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.note-carte-haut a {
+  color: var(--primaire);
+  text-decoration: none;
+  word-break: break-all;
+  font-size: 14px;
+}
+
+.note-carte-haut a:hover {
+  text-decoration: underline;
+}
+
+.note-carte-bas {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.note-carte-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.note-carte-note .badge {
+  font-size: 18px;
+  padding: 4px 14px;
+}
+
+.note-provisoire {
+  font-style: italic;
+  color: var(--texte-metadonnee);
+  font-size: 14px;
+}
+
+.note-carte-commentaire {
+  color: var(--texte-secondaire);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.retour-mention {
+  margin-top: 16px;
+  font-size: 13px;
+  color: var(--texte-metadonnee);
+}
+
+/* ---------- Écran relecteur (commit 6) ---------- */
+.relectures-liste {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.relectures-vide {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 40px 24px;
+  text-align: center;
+  color: var(--tertiaire-fonce);
+}
+
+.relectures-vide-titre {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--texte);
+}
+
+.relectures-vide-texte {
+  color: var(--texte-secondaire);
+  font-size: 14px;
+}
+
+.formulaire-relecture {
+  max-width: none;
+}
+
+/* ---------- Composants réutilisables (commit 7) ---------- */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+  padding: 12px 20px;
+  border-radius: var(--rayon);
+  background: var(--texte);
+  color: #ffffff;
+  font-weight: 500;
+  box-shadow: var(--ombre-elevee);
+  animation: apparait 0.2s ease-out;
+  max-width: min(90vw, 480px);
+}
+
+/* ---------- Divers ---------- */
+.retour {
+  display: inline-block;
+  margin-top: 24px;
+  color: var(--primaire);
+  text-decoration: none;
+}
+
+.retour:hover {
+  text-decoration: underline;
+}
+
+.code-session {
+  font-family: var(--mono);
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 4px;
+  color: var(--texte);
+}
+
+.legende {
+  margin-bottom: 12px;
+  color: var(--texte-secondaire);
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    box-shadow: var(--ombre-elevee);
+  }
+
+  .sidebar-ouverte {
+    transform: none;
+  }
+
+  .header-hamburger {
+    display: inline-flex;
+  }
+
+  .contenu {
+    padding: 16px;
   }
 
   .bouton {
     align-self: stretch;
+    justify-content: center;
+  }
+}
+
+/* Tablette : sidebar visible, padding réduit */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .contenu {
+    padding: 24px;
+  }
+
+  .accueil-cartes {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .accueil-cartes {
+    grid-template-columns: 1fr;
   }
 }

@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useCallback, useState } from 'react'
+import Toast from '../components/Toast.jsx'
 import {
   deposerExercice,
   getEtudiants,
@@ -23,6 +23,25 @@ const MESSAGES_ERREUR_DEPOT = {
 
 function messageErreur(erreur, messages) {
   return messages[erreur.code] || erreur.message || 'Une erreur est survenue.'
+}
+
+/** Badge de statut d'exercice (libellés lisibles, valeurs API inchangées). */
+function BadgeStatut({ statut }) {
+  if (statut === 'RELUE') {
+    return <span className="badge succes">Relu</span>
+  }
+  return <span className="badge neutre">En attente</span>
+}
+
+/** Badge de couleur pour une note individuelle (mission #48). */
+function BadgeNote({ note }) {
+  if (note === null || note === undefined) {
+    return <span className="badge neutre">—</span>
+  }
+  const valeur = Number(note)
+  if (valeur > 15) return <span className="badge succes">{valeur}</span>
+  if (valeur >= 10) return <span className="badge alerte">{valeur}</span>
+  return <span className="badge erreur">{valeur}</span>
 }
 
 function EtudiantPage() {
@@ -67,10 +86,16 @@ function EtudiantPage() {
     [etudiantId, rafraichirExercices],
   )
 
+  // Nom et promotion sélectionnés (pour le résumé de l'étape 1)
+  const nomSelectionne = etudiants?.find((e) => String(e.id) === etudiantId)?.nom
+  const promotionSelectionnee = promotions?.find((p) => String(p.id) === promotionId)?.nom
+
   const changerPromotion = (event) => {
     setPromotionId(event.target.value)
     setEtudiantId('')
   }
+
+  const fermerToast = useCallback(() => setPresenceOk(false), [])
 
   const soumettrePresence = async (event) => {
     event.preventDefault()
@@ -112,11 +137,18 @@ function EtudiantPage() {
   }
 
   return (
-    <main className="page">
+    <div className="page">
       <h1>Écran étudiant</h1>
+      <p className="sous-titre">
+        Identifiez-vous, marquez votre présence, déposez votre exercice.
+      </p>
 
-      <section className="section" aria-labelledby="titre-identification">
-        <h2 id="titre-identification">Qui êtes-vous ?</h2>
+      {/* Étape 1 — Qui êtes-vous ? Se réduit à un résumé une fois identifié. */}
+      <section className="section carte-bloc" aria-labelledby="titre-identification">
+        <h2 id="titre-identification">
+          <span className="etape-numero" aria-hidden="true">1</span>
+          Qui êtes-vous ?
+        </h2>
 
         {promotionsEnCours && <p>Chargement des promotions…</p>}
         {erreurPromotions && (
@@ -125,7 +157,7 @@ function EtudiantPage() {
           </p>
         )}
 
-        {promotions && (
+        {!identifie && promotions && (
           <div className="formulaire">
             <div className="champ">
               <label htmlFor="promotion-etudiant">Promotion</label>
@@ -169,10 +201,27 @@ function EtudiantPage() {
             )}
           </div>
         )}
+
+        {identifie && (
+          <div className="identification-resume" role="status">
+            <span className="badge succes">✓</span>
+            <p>
+              <strong>{nomSelectionne}</strong>
+              {promotionSelectionnee && ` — ${promotionSelectionnee}`}
+            </p>
+          </div>
+        )}
       </section>
 
-      <section className="section" aria-labelledby="titre-presence">
-        <h2 id="titre-presence">Marquer ma présence</h2>
+      {/* Étape 2 — Marquer ma présence */}
+      <section
+        className={`section carte-bloc${!identifie ? ' etape-verrouillee' : ''}`}
+        aria-labelledby="titre-presence"
+      >
+        <h2 id="titre-presence">
+          <span className="etape-numero" aria-hidden="true">2</span>
+          Marquer ma présence
+        </h2>
 
         <form className="formulaire" onSubmit={soumettrePresence}>
           <div className="champ">
@@ -185,6 +234,7 @@ function EtudiantPage() {
               placeholder="6 caractères"
               maxLength={6}
               autoComplete="off"
+              className="champ-code"
             />
           </div>
           <button
@@ -192,15 +242,14 @@ function EtudiantPage() {
             type="submit"
             disabled={!identifie || code.trim().length !== 6 || presenceEnCours}
           >
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none"
+              stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 6L9 17l-5-5" />
+            </svg>
             {presenceEnCours ? 'Envoi…' : 'Marquer ma présence'}
           </button>
         </form>
 
-        {presenceOk && (
-          <p className="message succes" role="status">
-            Présence marquée, merci !
-          </p>
-        )}
         {erreurPresence && (
           <p className="message erreur" role="alert">
             {messageErreur(erreurPresence, MESSAGES_ERREUR_PRESENCE)}
@@ -208,8 +257,15 @@ function EtudiantPage() {
         )}
       </section>
 
-      <section className="section" aria-labelledby="titre-depot">
-        <h2 id="titre-depot">Déposer un exercice</h2>
+      {/* Étape 3 — Déposer un exercice */}
+      <section
+        className={`section carte-bloc${!identifie ? ' etape-verrouillee' : ''}`}
+        aria-labelledby="titre-depot"
+      >
+        <h2 id="titre-depot">
+          <span className="etape-numero" aria-hidden="true">3</span>
+          Déposer un exercice
+        </h2>
 
         <form className="formulaire" onSubmit={soumettreDepot}>
           <div className="champ">
@@ -238,6 +294,12 @@ function EtudiantPage() {
             type="submit"
             disabled={!identifie || !sessionId || !lien.trim() || depotEnCours}
           >
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none"
+              stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+              <path d="M17 8l-5-5-5 5" />
+              <path d="M12 3v12" />
+            </svg>
             {depotEnCours ? 'Dépôt…' : 'Déposer'}
           </button>
         </form>
@@ -254,7 +316,8 @@ function EtudiantPage() {
         )}
       </section>
 
-      <section className="section" aria-labelledby="titre-notes">
+      {/* Mes exercices et notes — cartes individuelles */}
+      <section className="section carte-bloc" aria-labelledby="titre-notes">
         <h2 id="titre-notes">Mes exercices et notes</h2>
 
         {!identifie && <p>Sélectionnez votre nom pour voir vos exercices.</p>}
@@ -269,46 +332,41 @@ function EtudiantPage() {
           <p>Aucun exercice déposé pour le moment.</p>
         )}
         {identifie && exercices && exercices.length > 0 && (
-          <div className="tableau-wrapper">
-            <table className="tableau">
-              <thead>
-                <tr>
-                  <th scope="col">Exercice</th>
-                  <th scope="col">Statut</th>
-                  <th scope="col" className="nombre">
-                    Note
-                  </th>
-                  <th scope="col">Commentaire</th>
-                </tr>
-              </thead>
-              <tbody>
-                {exercices.map((exercice) => (
-                  <tr key={exercice.id}>
-                    <td>
-                      <a href={exercice.lien} target="_blank" rel="noreferrer">
-                        {exercice.lien}
-                      </a>
-                    </td>
-                    <td>{exercice.statut}</td>
-                    <td className="nombre">
-                      {exercice.note ?? '—'}
-                      {exercice.noteProvisoire === true && (
-                        <span className="note-provisoire"> (provisoire)</span>
-                      )}
-                    </td>
-                    <td>{exercice.commentaire ?? '—'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <ul className="notes-cartes">
+            {exercices.map((exercice) => (
+              <li key={exercice.id} className="note-carte">
+                <div className="note-carte-haut">
+                  <a href={exercice.lien} target="_blank" rel="noreferrer">
+                    {exercice.lien}
+                  </a>
+                  <BadgeStatut statut={exercice.statut} />
+                </div>
+                <div className="note-carte-bas">
+                  <span className="note-carte-note">
+                    <BadgeNote note={exercice.note} />
+                    {exercice.noteProvisoire === true && (
+                      <span className="note-provisoire"> (provisoire)</span>
+                    )}
+                  </span>
+                  <p className="note-carte-commentaire">
+                    {exercice.commentaire ?? '—'}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ul>
         )}
       </section>
 
-      <Link className="retour" to="/">
-        ← Retour à l&apos;accueil
-      </Link>
-    </main>
+      <p className="retour-mention">
+        Utilisez le menu à gauche pour revenir à l&apos;accueil.
+      </p>
+
+      <Toast
+        message={presenceOk ? '✓ Présence marquée, merci !' : null}
+        onFerme={fermerToast}
+      />
+    </div>
   )
 }
 

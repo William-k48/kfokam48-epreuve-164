@@ -1,3 +1,178 @@
+feat/48-refonte-ui-ux
+### Issue #48 — Vérifications finales
+
+**Fait** : bilan de fin de mission sur l'état final de `feat/48-refonte-ui-ux` (9 commits). **Frontend** : `npm run build` → ✓ OK ; `npx vitest run` → **33/33** (21 tests existants adaptés au markup sans changer leurs vérifications + 12 nouveaux tests de composants) ; `npm run lint` → 0 erreur, 0 warning (22 fichiers). **Backend** (preuve qu'il n'a pas bougé) : `mvnw test` → BUILD SUCCESS, **12/12** (CorsSmokeTemp 4 — résidu de build non présent dans les sources, PrésenceController 2, PrésenceService 3, RelectureService 3) ; aucun fichier `backend/` ni `api/` ni `nginx.conf` ni `client.js`/`useApi.js`/`vite.config.js` modifié (vérifié par l'historique des 9 commits : frontend/, docs/ seulement).
+
+**Vérification fonctionnelle (par inspection du code livré)** : les 3 écrans s'affichent sous l'AppLayout (routes inchangées) ; les appels API partent des mêmes fonctions avec les mêmes payloads (`client.js` intouché, signature `useApi` inchangée) ; les erreurs métier gardent leurs messages mappés et `role="alert"` ; le tableau formateur affiche la moyenne (badges colorés, « — » si null — `formaterMoyenne` inchangé) ; l'écran étudiant affiche `noteProvisoire === true` avec la mention « (provisoire) » ; l'écran relecteur liste les relectures `EN_ATTENTE` retournées par l'API ; proxy Vite/CORS non touchés (`vite.config.js`, `nginx.conf` intacts). Communication backend ↔ frontend intacte par construction.
+
+**Limite connue (signalée)** : l'instabilité des workers Vitest sur ce poste Windows (timeouts intermittents, panne complète passagère observée au commit 7) — préexistante (#34), indépendante de la refonte, disparaît à la relance.
+
+**Commit** : entrée de bilan, aucun commit de code associé.
+
+---
+
+### Issue #48 — Commit 9 : documentation du design system
+
+**Fait** : `docs/DESIGN_SYSTEM.md` — documente la palette (jetons CSS + rôles + interdits + contraste AA), la typographie (Inter, échelle imposée), le layout global (schéma ASCII sidebar/header/contenu + responsive), les 5 composants réutilisables et leurs API, les règles formulaires/boutons, le feedback et les micro-interactions (animation unique + `prefers-reduced-motion`), l'accessibilité (clavier, rôles ARIA), et 5 **décisions notables** : thème clair unique (dark mode du template retiré, justification), SVG inline plutôt que `lucide-react`, mention provisoire, RG7, logo placeholder remplaçable au même chemin.
+
+**Pas touché (logique métier)** : documentation seule.
+
+**Bloqué** : aucun.
+
+**IA** : a rédigé la documentation à partir du code livré. Vérifié : chaque jeton documenté correspond à la valeur réelle de `index.css`, chaque composant documenté existe dans `src/components/` avec l'API décrite.
+
+**Commit** : `docs(ui): documente le design system`
+
+---
+
+### Issue #48 — Commit 8 : tests des composants UI
+
+**Fait** : `src/components/composants.test.jsx` — 12 nouveaux tests Vitest/Testing Library sur les 4 composants réutilisables : `Badge` (variante appliquée, défaut neutre) + `varianteNote` (5 cas de seuil : 16→succes, 10→alerte, 9→erreur, 20→succes, 0→erreur — verrouille la règle de couleur des badges) ; `Card` (titre + aria-labelledby, cas sans titre) ; `EmptyState` (role status, illustration, titre, texte) ; `Toast` (rien sans message, affichage avec role status, disparition à la durée exacte via `vi.useFakeTimers` — 2999 ms rien, 3000 ms fermeture). Total : **33 tests** (21 existants inchangés + 12 nouveaux).
+
+**Pas touché (logique métier)** : aucun — ce commit n'ajoute que des tests de composants visuels.
+
+**Bloqué** : aucun blocage significatif.
+
+**IA** : a écrit les 12 tests. Vérifié : `npx vitest run` → 33/33 (6 fichiers), `npm run lint` → 0 erreur (22 fichiers).
+
+**Commit** : `test(ui): teste les composants réutilisables`
+
+---
+
+### Issue #48 — Commit 7 : composants réutilisables (Card, Badge, Toast, EmptyState)
+
+**Fait** : nouveau dossier `src/components/` avec 4 composants **purement visuels** : `Card.jsx` (bloc `.carte-bloc` avec titre optionnel), `Badge.jsx` (pill neutre/succes/alerte/erreur + helper exporté `varianteNote(note)` centralisant les seuils >15/10–15/<10, un seul endroit à modifier), `Toast.jsx` (notification fixe en bas d'écran, `role="status"`, disparition auto après 3 s, minuterie nettoyée au démontage), `EmptyState.jsx` (illustration + titre + texte, réutilise les styles `.relectures-vide`). Refactor : `RelecteurPage` utilise `EmptyState` (même markup résultant), `EtudiantPage` affiche la confirmation de présence via **Toast** (le message inline dupliqué a été retiré — le doublon d'information était une faute d'UX ; le Toast est le « feedback visuel immédiat » demandé). Style `.toast` ajouté à `App.css`.
+
+**Pas touché (logique métier)** : aucun appel API, aucun état métier modifié — `presenceOk` pilote le Toast exactement comme il pilotait le message inline ; les pages restent propriétaires des messages et des seuils (ou passent par `varianteNote` qui porte la même règle).
+
+**Adaptation de test** : aucune nécessaire (le test de présence matche `/Présence marquée, merci !/` qui est le texte du Toast).
+
+**Bloqué** : une panne complète des workers Vitest a eu lieu pendant la vérification (« Timeout waiting for worker to respond » sur les 5 fichiers, 0 test exécuté) — passée à la relance sans aucun changement (symptôme #34). Signalé pour transparence.
+
+**IA** : a créé les 4 composants, branché le Toast et EmptyState. Vérifié : `npm run build` → ✓ built in 618ms, `npx vitest run` → 21/21, `npm run lint` → 0 erreur (21 fichiers).
+
+**Commit** : `feat(ui): ajoute les composants reutilisables (Card, Badge, Toast)`
+
+---
+
+### Issue #48 — Commit 6 : écran relecteur
+
+**Fait** : `RelecteurPage.jsx` — **état vide repensé** : le message condescendant « Aucune relecture en attente. Bravo ! » est remplacé par le bloc `.relectures-vide` (illustration **tasse de café SVG inline**, titre « Tout est à jour. Reposez-vous ! », sous-texte « Aucune relecture en attente pour le moment », `role="status"`). Chaque relecture en attente est une **carte** `.carte-bloc` (dans une pile `.relectures-liste`) conservant exactement la légende « Exercice #id — ouvrir le lien — l'auteur reste anonyme » (RG7 : l'API n'expose pas l'auteur, **aucun nom inventé** — conformément à l'analyse préalable R2), note (validation locale inchangée : entier 0–20), commentaire, bouton avec icône ✓. Section d'identification dans une carte. Bouton « Rendre la relecture » inchangé (nom conservé — test existant).
+
+**Pas touché (logique métier)** : `getRelecturesEtudiant`, `rendreRelecture`, 3 codes d'erreur mappés à l'identique, validation de note, `role="alert"/"status"`, refresh après rendu, RG7.
+
+**Adaptation de test (autorisée, texte seul)** : `RelecteurPage.test.jsx` — `findByText('Aucune relecture en attente. Bravo !')` → `findByText('Tout est à jour. Reposez-vous !')`. La vérification (l'exercice quitte la liste après rendu) est **inchangée**.
+
+**Bloqué** : aucun blocage significatif (les timeouts workers intermittents restent présents mais le run est passé du premier coup après l'adaptation).
+
+**IA** : a refondu la page et l'état vide, adapté le texte du test. Vérifié : `npm run build` → ✓ built in 1.34s, `npx vitest run` → 21/21, `npm run lint` → 0 erreur.
+
+**Commit** : `feat(ui): refait l'ecran relecteur`
+
+---
+
+### Issue #48 — Commit 5 : écran étudiant
+
+**Fait** : `EtudiantPage.jsx` réorganisé en **stepper de 3 étapes** — chaque section devient une `.carte-bloc` avec pastille numérotée (`.etape-numero`, fond primaire) : **1 — Qui êtes-vous ?** (les deux selects ; une fois l'étudiant choisi, le formulaire se **masque et se réduit à un résumé** badge vert ✓ + nom + promotion, `role="status"`), **2 — Marquer ma présence** (code en grand style mono/letter-spacing, bouton avec icône ✓, confirmation « ✓ Présence marquée, merci ! » animée), **3 — Déposer un exercice** (bouton avec icône upload). Les étapes 2 et 3 sont **estompées** (`.etape-verrouillee`, opacité 0.6) tant que l'étudiant n'est pas identifié — les champs restent accessibles (aucune fonctionnalité retirée, seulement une guidance visuelle). Section « Mes exercices et notes » : le tableau devient des **cartes individuelles** (`.notes-cartes`, grille auto-fill) avec lien cliquable, **badge de statut** (« En attente » neutre / « Relu » vert — libellés lisibles, valeurs API inchangées), **note en gros en badge coloré** (>15 vert, 10–15 orange, <10 rouge, « — » neutre) avec **mention « (provisoire) » conservée** si `noteProvisoire === true`, commentaire en dessous. Mention RG7 : aucun relecteur affiché.
+
+**Pas touché (logique métier)** : `marquerPresence`, `deposerExercice`, `getExercicesEtudiant`, `getPromotions`, `getEtudiants`, tous les états et effets, les 6 codes d'erreur mappés à l'identique, `noteProvisoire` (même condition stricte `=== true`), RG7, les `role="alert"/"status"`, la coercion `Number()` des ids.
+
+**Adaptations de tests (autorisées, vérifications inchangées)** : (1) `findByText('Présence marquée, merci !')` → `findByText(/Présence marquée, merci !/)` car le « ✓ » décoratif casse le nœud texte exact ; (2) `getByText('RELUE')` → `getByText('Relu')` (libellé lisible du badge) ; (3) le test provisoire ciblait la carte via le commentaire du 2ᵈ exercice — ambigu depuis les cartes (le « — » du commentaire) → ciblage par le lien unique `https://exercice.example/7` puis `.closest('.note-carte')`.
+
+**Bloqué** : encore l'instabilité workers Vitest (un timeout 5 s sur le test de présence en run complet, passe seul et au run suivant 21/21) — mêmes symptômes que #34 ; signalé, aucun changement de code.
+
+**IA** : a refondu la page en stepper, les cartes de notes et adapté les 3 tests. Vérifié : `npm run build` → ✓ built in 1.50s, `npx vitest run` → 21/21 (fichier seul 4/4 aussi), `npm run lint` → 0 erreur.
+
+**Commit** : `feat(ui): refait l'ecran etudiant`
+
+---
+
+### Issue #48 — Commit 4 : écran formateur
+
+**Fait** : `FormateurPage.jsx` réorganisé en **layout 2 colonnes** (`.formateur-grille` 1fr/2fr, empilé sous 1024 px), chaque section dans une `.carte-bloc` ombrée. Colonne gauche « Ouvrir une session » : bouton renommé **« Lancer la session »** (libellé imposé par la mission) avec icône lecture ; après création, le **code s'affiche en gros** (`.code-session` : mono 28 px, letter-spacing 4 px) avec bouton **« Copier »** (presse-papier `navigator.clipboard`, retour « Copié ! » 2 s, repli silencieux si le presse-papier est indisponible — le code reste affiché), dates en méta 13 px. Colonne droite « Tableau de synthèse » : lignes alternées (fond gris très clair), **badges de couleur sur la moyenne** (BadgeNote : >15 vert succès `#2A9D8F`, 10–15 orange alerte `#F4A261`, <10 rouge `#E63946`, « — » badge neutre si null — le format d'affichage `formaterMoyenne` est **inchangé**), colonne « Actions » avec icône œil **décorative** (title « Détail à venir », aucun handler — pas de logique de détail dans le contrat). Sous-titre d'accroche ajouté.
+
+**Pas touché (logique métier)** : `ouvrirSession`, `getPromotions`, `getTableau`, champs `titre`/`promotionId`, format « — » si moyenne null, erreurs `PROMOTION_INCONNUE` (message identique), `role="alert"/"status"` conservés.
+
+**Adaptation de test (autorisée, texte seul)** : `FormateurPage.test.jsx` cherchait le bouton `name: 'Ouvrir la session'` → renommé `name: 'Lancer la session'`. La vérification (l'ouverture affiche le code généré) est **inchangée**.
+
+**Bloqué** : un échec intermittent supplémentaire de workers Vitest observé sur `EtudiantPage.test.jsx` lors d'un run complet (passe seul 4/4, passe au run suivant) — même cause documentée (pool threads Windows, #34) ; aucun lien avec le layout formateur.
+
+**IA** : a réorganisé la page, ajouté BadgeNote et la copie du code, adapté le libellé du test. Vérifié : `npm run build` → ✓ built in 1.86s, `npx vitest run` → 21/21, `npm run lint` → 0 erreur.
+
+**Commit** : `feat(ui): refait l'ecran formateur`
+
+---
+
+### Issue #48 — Commit 3 : écran d'accueil
+
+**Fait** : `App.jsx` — accueil en grille de **3 colonnes** (desktop), 1 colonne (mobile, ≤768 px), auto-fit (tablette) : chaque carte contient une **icône colorée par rôle** (formateur = primaire bleu, étudiant = succès vert, relecteur = tertiaire ocre, pastille 56 px), titre `<span class=carte-titre>` (style titre), description 1–2 lignes, et un « bouton » **Accéder** (span stylé `.bouton` avec `pointer-events: none` — c'est la carte entière qui est le lien `Link`, aucun lien imbriqué). Hover : élévation `translateY(-3px)` + `box-shadow` élevée + le pseudo-bouton fonce (par couleur de rôle). Libellés des écrans et routes **inchangés**. Styles ajoutés à `App.css` (`.accueil-*`).
+
+**Pas touché (logique métier)** : `Link`/routes, données affichées, aucun appel API (l'accueil n'en fait aucun), tests.
+
+**Bloqué** : aucun blocage significatif.
+
+**IA** : a refondu l'accueil et ses styles. Vérifié : `npm run build` → ✓ built in 1.91s, `npx vitest run` → 21/21, `npm run lint` → 0 erreur.
+
+**Commit** : `feat(ui): refait l'ecran d'accueil`
+
+---
+
+### Issue #48 — Commit 2 : layout global (Sidebar + Header)
+
+**Fait** : nouveau `src/components/Sidebar.jsx` (logo KFOKAM 48 en haut à gauche, hauteur 40 px, image importée — jamais recréé en CSS/SVG ; navigation NavLink avec état actif stylé fond primaire-clair + barre interne, icônes SVG inline maison — choix documenté : aucune dépendance ajoutée à package.json ; bas de sidebar « Invité » + bouton « Déconnexion » désactivé, aucune auth inventée ; mobile : drawer overlay avec voile, fermeture par clic extérieur, Échap ou navigation), `src/components/Header.jsx` (fil d'Ariane « Accueil › Écran » dérivé de la route via useLocation — libellés d'écrans inchangés, cloche de notifications décorative désactivée avec aria-label, hamburger mobile), `src/layouts/AppLayout.jsx` (Sidebar + Header + `<Outlet/>`, état du drawer local au layout). `App.jsx` : les 4 routes sont **inchangées**, simplement enveloppées dans `<Route element={<AppLayout />}>`. `App.css` : styles sidebar (sticky 100svh, largeur variable 250px), header (sticky 64px), fil d'Ariane, voile, responsive (sidebar fixed translateX(-100%) sous 768 px, hamburger visible ; tablette 769–1024 px padding réduit).
+
+**Pas touché (logique métier)** : routes, appels API, pages, tests, `client.js`/`useApi.js`, `main.jsx` (l'enveloppe passe par le routing imbriqué, pas par main).
+
+**Bloqué** : environ 15 min d'instabilité des workers Vitest sur ce poste (résultats différents entre exécutions successives : 5 échecs puis 1 échec puis 21/21 sans changement de code) — comportement déjà rencontré au ticket #34, lié au pool `threads` Windows. La ligne de base fiable `npx vitest run` donne 21/21 sur 3 exécutions consécutives. Aucun test n'a été modifié, aucun échec ne concerne le layout (les échecs intermittents touchaient des tests API existants non liés).
+
+**IA** : a créé Sidebar/Header/AppLayout et les styles. Vérifié : `npm run build` → ✓ built in 4.15s, `npx vitest run` → 21/21 (×3), `npm run lint` → 0 erreur/0 warning (17 fichiers).
+
+**Commit** : `feat(ui): ajoute le layout global (Sidebar + Header)`
+
+---
+
+### Issue #48 — Commit 1 : design system (variables, typographie, couleurs)
+
+**Fait** : `index.css` réécrit entièrement : palette de marque (primaire `#0077B6`/`#005F8E`, secondaire corail `#E63946`, tertiaire ocre `#D4A373`, succès `#2A9D8F`, alerte `#F4A261`, neutres `#F8F9FA/#212529/#6C757D/#DEE2E6` — jamais de noir pur, jamais de gris clair sur blanc), échelle typographique imposée (h1 32/700, h2 24/600, h3 18/600, corps 16/400 lh 1.6, labels 14/600, méta 13), variables du layout (`--sidebar-largeur: 250px`, `--header-hauteur: 64px`), ombres/rayons, `:focus-visible` uniforme, bloc `prefers-reduced-motion`. **Le violet `#aa3bff` du template Vite est supprimé partout** (plus de `prefers-color-scheme: dark` : thème clair de marque unique, décision documentée). Alias de compatibilité (`--accent`, `--text`, `--bg`, `--border`, `--shadow`…) pointant vers les nouvelles variables pour ne pas casser les classes existantes avant leur refonte. `App.css` refondu : base commune (layout flex, cartes, formulaires avec focus primaire + ombre, boutons avec états hover/active/focus-visible/disabled, messages, tableaux, badges, animation `apparait` 0.2s). `index.html` : police **Inter** via Google Fonts (preconnect + display=swap), meta description, titre « KFOKAM 48 — Suivi des exercices ». Logo : `src/assets/logo-kfokam48.png` créé (480×120 PNG placeholder généré par script — le fichier officiel du client n'étant pas disponible comme binaire dans cette session, il suffira de déposer l'image officielle au même chemin, le composant Sidebar le chargera tel quel).
+
+**Pas touché (logique métier)** : aucun JSX, aucun appel API, aucune route, aucun test — les alias CSS garantissent que l'UI actuelle reste visuellement correcte pendant la transition.
+
+**Bloqué** : environ 10 min — le script de génération du logo a été écrit au mauvais chemin (racine puis `frontend/` au lieu du projet) à cause du répertoire de travail du client ; corrigé, script exécuté puis supprimé.
+
+**IA** : a rédigé le design system et la feuille de styles. Vérifié : `npm run build` → ✓ built in 2.05s, `npm test` → 21/21, `npm run lint` → 0 erreur, 0 warning.
+
+**Commit** : `feat(ui): ajoute le design system (variables, typographie, couleurs)`
+
+---
+
+## Analyse préalable — Refonte UI/UX (issue #48, ÉTAPE 0)
+
+**Fait** : exploration complète du frontend avant toute modification : `App.jsx` (accueil 3 cartes + `<Routes>` 4 routes), `main.jsx` (`BrowserRouter`), 3 pages (`FormateurPage` : ouverture session + tableau ; `EtudiantPage` : identification 2 selects + présence + dépôt + notes ; `RelecteurPage` : identification + liste + formulaire par relecture), couche API (`client.js` 12 fonctions, `useApi` hook), styles (`index.css` variables dont accent **violet `#aa3bff` à supprimer**, `App.css` ~340 lignes classes `.page/.section/.formulaire/.champ/.bouton/.message/.tableau/.carte`), tests (4 fichiers, 21 tests Testing Library qui ciblent **labels, textes et rôles, pas le markup CSS**), `index.html` (lang=fr, titre), `vite.config.js` (proxy /api → 8085, config vitest pool threads), `package.json` (react 19.2.8 — CDC annonce 18, écart déjà signalé à l'issue #32 ; aucune lib UI/icônes installée).
+
+**Réponse à la question imposée — « Est-il possible de refaire l'UI/UX sans casser la logique existante ? Quels sont les risques ? Quels fichiers modifier, lesquels ne pas toucher ? »**
+
+**OUI, c'est possible avec un risque faible et maîtrisé**, pour trois raisons structurelles :
+1. **La logique est déjà isolée** : aucun `fetch` hors de `client.js`, aucune règle métier dans les pages (RG17), les pages ne font qu'appeler les fonctions API et afficher `{ data, loading, error }` du hook `useApi`. Réécrire le JSX des pages ne touche pas cette mécanique.
+2. **Les tests sont robustes au changement de markup** : ils interrogent le DOM accessible (labels `getByLabelText`, textes `findByText`, rôles), pas les classes CSS. Je peux donc changer le layout, les classes et les composants tant que je conserve les libellés, labels et rôles — seuls 2 tests besoin d'adaptation prévisible (markup des cartes de notes → `getByText('12')` et structure des lignes exercice).
+3. **Le layout demandé (Sidebar/Header) est purement additif** : un `AppLayout` qui enveloppe `<Routes>` dans `App.jsx` ne modifie ni les routes, ni les appels, ni les états.
+
+**Risques identifiés et parades** :
+- **R1 — Tests qui cassent** (le plus probable) : l'écran étudiant devient un stepper et ses sections se masquent/affichent conditionnellement → des tests qui cherchent un champ présent par défaut peuvent échouer. Parade : conserver tous les textes/labels/rôles actuels, ne masquer l'étape 1 qu'après sélection (comportement demandé), adapter les tests **sans changer ce qu'ils vérifient** (ce qui est permis).
+- **R2 — RG7 (anonymat)** : le cahier demande d'afficher « le nom de l'étudiant » sur les cartes du relecteur — **l'API ne l'expose pas** (volontaire, RG7). Je ne l'invente pas : les cartes resteront « Exercice #id » avec lien, comme aujourd'hui. C'est déjà conforme, je le signale.
+- **R3 — Logo non fourni** : le fichier `frontend/src/assets/logo-kfokam48.png` n'existe pas encore dans le dépôt ; vous le fournissez après cette analyse. Je coderai le layout avec un emplacement réservé (alt correct, hauteur 40 px) et je brancherai l'image à réception — ou j'utiliserai l'image fournie immédiatement si elle est là avant le commit 2.
+- **R4 — React 19 vs 18** : le CDC impose React 18, le projet tourne en 19.2.8 (écart connu, signalé à l'issue #32, hooks identiques). Je n'y touche pas (changement de version = risque logique, hors périmètre visuel).
+- **R5 — Copy du relecteur** : « Aucune relecture en attente. Bravo ! » → « Tout est à jour. Reposez-vous ! » : changement de texte **vérifié par un test** (`findByText('Aucune relecture en attente. Bravo !')`) → adaptation du test prévue au commit 6/8 (texte seul, pas la vérification).
+- **R6 — Icônes** : aucune lib d'icônes installée. Deux options : SVG inline (zéro dépendance, style maîtrisé) ou `lucide-react` (justification demandée dans la mission). **Je recommande les SVG inline** : aucune modification de `package.json`, aucun risque supply-chain,contrôle total du rendu — je prendrai cette voie sauf contre-ordre.
+
+**Fichiers à modifier** : `index.css` (variables design system), `App.css` (refonte complète), `index.html` (police + titre), `App.jsx` (accueil + enveloppe layout), `main.jsx` (seulement si besoin d'y placer le layout), les 3 pages (JSX visuel uniquement), nouveau `src/components/` (Sidebar, Header, Card, Badge, Toast…), nouveau `src/layouts/AppLayout.jsx`, nouveau `src/assets/logo-kfokam48.png` (à réception), les 4 fichiers de test (adaptation markup seulement), nouveau `docs/DESIGN_SYSTEM.md`, entrées `docs/JOURNAL.md`.
+
+**Fichiers intouchables (confirmé)** : `src/api/client.js` et `src/api/useApi.js` (interdits), `vite.config.js` (interdit — la config vitest existante suffit), `nginx.conf` (interdit), tout `backend/` (interdit), `package.json` (sauf dépendance UI justifiée — aucune ne l'est avec les SVG inline).
+
+**Stratégie** : branche `feat/48-refonte-ui-ux` créée depuis `feat/43-deux-relecteurs` (pour partir de l'état réel livré avec noteProvisoire — à valider : si vous préférez partir de `main`, dites-le, le coût est nul à ce stade). Commits atomiques dans l'ordre imposé (design system → layout → accueil → formateur → étudiant → relecteur → composants réutilisables → tests → docs), vérifications build+tests+lint après chaque commit, backend vérifié (compile+test) en début et fin de mission pour prouver qu'il n'a pas bougé.
+
+**En attente de** : feu vert + logo KFOKAM 48. Aucune ligne de code UI écrite à ce stade.
+
+---
 
 ### Issue #47 — Affichage de la note provisoire (frontend)
 
