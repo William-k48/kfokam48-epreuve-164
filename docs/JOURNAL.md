@@ -1,3 +1,19 @@
+### Issue #48 — Commit 5 : écran étudiant
+
+**Fait** : `EtudiantPage.jsx` réorganisé en **stepper de 3 étapes** — chaque section devient une `.carte-bloc` avec pastille numérotée (`.etape-numero`, fond primaire) : **1 — Qui êtes-vous ?** (les deux selects ; une fois l'étudiant choisi, le formulaire se **masque et se réduit à un résumé** badge vert ✓ + nom + promotion, `role="status"`), **2 — Marquer ma présence** (code en grand style mono/letter-spacing, bouton avec icône ✓, confirmation « ✓ Présence marquée, merci ! » animée), **3 — Déposer un exercice** (bouton avec icône upload). Les étapes 2 et 3 sont **estompées** (`.etape-verrouillee`, opacité 0.6) tant que l'étudiant n'est pas identifié — les champs restent accessibles (aucune fonctionnalité retirée, seulement une guidance visuelle). Section « Mes exercices et notes » : le tableau devient des **cartes individuelles** (`.notes-cartes`, grille auto-fill) avec lien cliquable, **badge de statut** (« En attente » neutre / « Relu » vert — libellés lisibles, valeurs API inchangées), **note en gros en badge coloré** (>15 vert, 10–15 orange, <10 rouge, « — » neutre) avec **mention « (provisoire) » conservée** si `noteProvisoire === true`, commentaire en dessous. Mention RG7 : aucun relecteur affiché.
+
+**Pas touché (logique métier)** : `marquerPresence`, `deposerExercice`, `getExercicesEtudiant`, `getPromotions`, `getEtudiants`, tous les états et effets, les 6 codes d'erreur mappés à l'identique, `noteProvisoire` (même condition stricte `=== true`), RG7, les `role="alert"/"status"`, la coercion `Number()` des ids.
+
+**Adaptations de tests (autorisées, vérifications inchangées)** : (1) `findByText('Présence marquée, merci !')` → `findByText(/Présence marquée, merci !/)` car le « ✓ » décoratif casse le nœud texte exact ; (2) `getByText('RELUE')` → `getByText('Relu')` (libellé lisible du badge) ; (3) le test provisoire ciblait la carte via le commentaire du 2ᵈ exercice — ambigu depuis les cartes (le « — » du commentaire) → ciblage par le lien unique `https://exercice.example/7` puis `.closest('.note-carte')`.
+
+**Bloqué** : encore l'instabilité workers Vitest (un timeout 5 s sur le test de présence en run complet, passe seul et au run suivant 21/21) — mêmes symptômes que #34 ; signalé, aucun changement de code.
+
+**IA** : a refondu la page en stepper, les cartes de notes et adapté les 3 tests. Vérifié : `npm run build` → ✓ built in 1.50s, `npx vitest run` → 21/21 (fichier seul 4/4 aussi), `npm run lint` → 0 erreur.
+
+**Commit** : `feat(ui): refait l'ecran etudiant`
+
+---
+
 ### Issue #48 — Commit 4 : écran formateur
 
 **Fait** : `FormateurPage.jsx` réorganisé en **layout 2 colonnes** (`.formateur-grille` 1fr/2fr, empilé sous 1024 px), chaque section dans une `.carte-bloc` ombrée. Colonne gauche « Ouvrir une session » : bouton renommé **« Lancer la session »** (libellé imposé par la mission) avec icône lecture ; après création, le **code s'affiche en gros** (`.code-session` : mono 28 px, letter-spacing 4 px) avec bouton **« Copier »** (presse-papier `navigator.clipboard`, retour « Copié ! » 2 s, repli silencieux si le presse-papier est indisponible — le code reste affiché), dates en méta 13 px. Colonne droite « Tableau de synthèse » : lignes alternées (fond gris très clair), **badges de couleur sur la moyenne** (BadgeNote : >15 vert succès `#2A9D8F`, 10–15 orange alerte `#F4A261`, <10 rouge `#E63946`, « — » badge neutre si null — le format d'affichage `formaterMoyenne` est **inchangé**), colonne « Actions » avec icône œil **décorative** (title « Détail à venir », aucun handler — pas de logique de détail dans le contrat). Sous-titre d'accroche ajouté.

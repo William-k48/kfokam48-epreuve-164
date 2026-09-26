@@ -596,6 +596,120 @@
   }
 }
 
+/* ---------- Écran étudiant (commit 5) ---------- */
+.etape-numero {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin-right: 10px;
+  border-radius: 999px;
+  background: var(--primaire);
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.etape-verrouillee {
+  opacity: 0.6;
+}
+
+.etape-verrouillee .etape-numero {
+  background: var(--bordure-forte);
+}
+
+.identification-resume {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.champ-code {
+  font-family: var(--mono);
+  font-size: 20px;
+  letter-spacing: 6px;
+  text-transform: uppercase;
+  max-width: 220px;
+}
+
+.presence-confirmation {
+  animation: apparait 0.25s ease-out;
+}
+
+/* Cartes de notes (exercices de l'étudiant) */
+.notes-cartes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.note-carte {
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--fond);
+}
+
+.note-carte-haut {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.note-carte-haut a {
+  color: var(--primaire);
+  text-decoration: none;
+  word-break: break-all;
+  font-size: 14px;
+}
+
+.note-carte-haut a:hover {
+  text-decoration: underline;
+}
+
+.note-carte-bas {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.note-carte-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.note-carte-note .badge {
+  font-size: 18px;
+  padding: 4px 14px;
+}
+
+.note-provisoire {
+  font-style: italic;
+  color: var(--texte-metadonnee);
+  font-size: 14px;
+}
+
+.note-carte-commentaire {
+  color: var(--texte-secondaire);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.retour-mention {
+  margin-top: 16px;
+  font-size: 13px;
+  color: var(--texte-metadonnee);
+}
+
 /* ---------- Divers ---------- */
 .retour {
   display: inline-block;

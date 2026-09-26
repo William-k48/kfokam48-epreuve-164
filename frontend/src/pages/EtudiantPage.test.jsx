@@ -56,7 +56,9 @@ describe('EtudiantPage', () => {
     await user.type(screen.getByLabelText('Code de la session'), 'ABC123')
     await user.click(screen.getByRole('button', { name: 'Marquer ma présence' }))
 
-    expect(await screen.findByText('Présence marquée, merci !')).toBeInTheDocument()
+    expect(
+      await screen.findByText(/Présence marquée, merci !/),
+    ).toBeInTheDocument()
     expect(marquerPresence).toHaveBeenCalledWith('ABC123', 1)
   })
 
@@ -94,7 +96,8 @@ describe('EtudiantPage', () => {
     await identifier(user)
 
     expect(await screen.findByText('Bon travail.')).toBeInTheDocument()
-    expect(screen.getByText('RELUE')).toBeInTheDocument()
+    // Le statut API RELUE est affiché avec le libellé lisible « Relu » (badge)
+    expect(screen.getByText('Relu')).toBeInTheDocument()
     expect(screen.queryByText(/relecteur/i)).not.toBeInTheDocument()
   })
 
@@ -127,10 +130,12 @@ describe('EtudiantPage', () => {
     expect(await screen.findByText('12')).toBeInTheDocument()
     expect(screen.getByText(/provisoire/i)).toBeInTheDocument()
     // Aucune note affichée quand aucune relecture n'est rendue (noteProvisoire null) :
-    // la ligne du second exercice ne porte aucune mention (provisoire)
-    const celluleNoteExercice7 = screen.getByText('Correct mais rapidement traite.').closest('tr')
-      ?.nextElementSibling
-    expect(celluleNoteExercice7).not.toBeNull()
-    expect(celluleNoteExercice7.textContent).not.toMatch(/provisoire/i)
+    // la carte du second exercice (identifiée par son lien unique) ne porte
+    // aucune mention (provisoire)
+    const carteExercice7 = screen
+      .getByText('https://exercice.example/7')
+      .closest('.note-carte')
+    expect(carteExercice7).not.toBeNull()
+    expect(carteExercice7.textContent).not.toMatch(/provisoire/i)
   })
 })
