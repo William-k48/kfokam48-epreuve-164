@@ -9,6 +9,7 @@ import cm.kfokam48.epreuve.entity.Session;
 import cm.kfokam48.epreuve.entity.SourcePresence;
 import cm.kfokam48.epreuve.exception.CodeExpireException;
 import cm.kfokam48.epreuve.exception.CodeInconnuException;
+import cm.kfokam48.epreuve.exception.ConflitConcurrencePresenceException;
 import cm.kfokam48.epreuve.exception.DejaPresentException;
 import cm.kfokam48.epreuve.exception.ResourceNotFoundException;
 import cm.kfokam48.epreuve.exception.SessionNotFoundException;
@@ -17,12 +18,20 @@ import cm.kfokam48.epreuve.repository.EtudiantRepository;
 import cm.kfokam48.epreuve.repository.PresenceRepository;
 import cm.kfokam48.epreuve.repository.SessionRepository;
 import java.time.LocalDateTime;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * EF2/EF3/EF4/EF5 — logique métier du marquage de présence.
  * Ordre des vérifications imposé (Q4) : blocage → code → expiration → doublon.
  * Le doublon (RG2) n'incrémente PAS le compteur d'erreurs : ce n'est pas une erreur de code.
+ *
+ * Bug #42 : deux étudiants saisissant le code quasi simultanément passaient tous deux
+ * le test de doublon (check-then-insert), et la seconde INSERT violait la contrainte
+ * uq_presence_session_etudiant → 500. Correctif : marquerPresence est désormais
+ * @Transactional et capture DataIntegrityViolationException pour renvoyer un 409
+ * DEJA_PRESENT métier (via ConflitConcurrencePresenceException) au lieu d'une 500.
  */
 @Service
 public class PresenceService {
@@ -46,7 +55,11 @@ public class PresenceService {
 
     /**
      * EF2 : l'étudiant marque sa présence avec le code (source toujours ETUDIANT ici).
+     * @Transactional : la vérification de doublon et l'INSERT partagent la même
+     * transaction ; la violation éventuelle de uq_presence_session_etudiant est
+     * convertie en 409 DEJA_PRESENT (bug #42).
      */
+    @Transactional
     public PresenceResponse marquerPresence(PresenceRequest request) {
         Long etudiantId = request.etudiantId();
 
@@ -80,17 +93,26 @@ public class PresenceService {
                         CODE_ETUDIANT_INCONNU, "L'étudiant demandé n'existe pas."));
 
         // 6-7. Création de la présence — ajouteeAt rempli explicitement (Hibernate ignore les DEFAULT SQL)
-        Presence presence = new Presence(session, etudiant, SourcePresence.ETUDIANT, LocalDateTime.now());
-        Presence enregistree = presenceRepository.save(presence);
+        // Bug #42 : si une requête concurrente insère la même présence entre-temps, la BDD
+        // rejette l'INSERT (contrainte UNIQUE) → traduction en 409 métier, pas de 500.
+        try {
+            Presence presence = new Presence(session, etudiant, SourcePresence.ETUDIANT, LocalDateTime.now());
+            Presence enregistree = presenceRepository.save(presence);
+            presenceRepository.flush();
 
-        // 8. Succès → remise à zéro du compteur
-        compteurTentativesService.reinitialiser(etudiantId);
+            // 8. Succès → remise à zéro du compteur
+            compteurTentativesService.reinitialiser(etudiantId);
 
-        return new PresenceResponse(
-                enregistree.getId(),
-                session.getId(),
-                etudiant.getId(),
-                enregistree.getSource().name());
+            return new PresenceResponse(
+                    enregistree.getId(),
+                    session.getId(),
+                    etudiant.getId(),
+                    enregistree.getSource().name());
+        } catch (DataIntegrityViolationException exception) {
+            // La contrainte uq_presence_session_etudiant a rejeté l'INSERT : la présence
+            // concurrente a gagné la course. Réponse métier 409 DEJA_PRESENT (bug #42).
+            throw new ConflitConcurrencePresenceException();
+        }
     }
 
     /**

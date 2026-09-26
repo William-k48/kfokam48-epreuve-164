@@ -1,3 +1,4 @@
+feat/48-refonte-ui-ux
 ### Issue #48 — Vérifications finales
 
 **Fait** : bilan de fin de mission sur l'état final de `feat/48-refonte-ui-ux` (9 commits). **Frontend** : `npm run build` → ✓ OK ; `npx vitest run` → **33/33** (21 tests existants adaptés au markup sans changer leurs vérifications + 12 nouveaux tests de composants) ; `npm run lint` → 0 erreur, 0 warning (22 fichiers). **Backend** (preuve qu'il n'a pas bougé) : `mvnw test` → BUILD SUCCESS, **12/12** (CorsSmokeTemp 4 — résidu de build non présent dans les sources, PrésenceController 2, PrésenceService 3, RelectureService 3) ; aucun fichier `backend/` ni `api/` ni `nginx.conf` ni `client.js`/`useApi.js`/`vite.config.js` modifié (vérifié par l'historique des 9 commits : frontend/, docs/ seulement).
@@ -183,7 +184,6 @@
 
 **Commit** : `feat(frontend): affiche la note provisoire (#47)`
 
----
 
 ### Issue #46 — Deux relecteurs et note moyenne (services backend)
 
@@ -195,7 +195,6 @@
 
 **Commit** : `feat(relectures): deux relecteurs et note moyenne (#46)`
 
----
 
 ### Issue #45 — Migration Flyway V3 : deux relecteurs par exercice
 
@@ -207,7 +206,6 @@
 
 **Commit** : `feat(db): migration V3 deux relecteurs par exercice (#45)`
 
----
 
 ### Issue #44 — Contrat d'API v1.1 : flag provisoire sur la note
 
@@ -219,7 +217,6 @@
 
 **Commit** : `api(contrat): ajoute le flag provisoire sur la note (#44)`
 
----
 
 ### Issue #43 — Analyse mise à jour : passage à 2 relecteurs
 
@@ -231,7 +228,15 @@
 
 **Commit** : `docs(analyse): mise a jour suite au passage a 2 relecteurs (#43)`
 
----
+### Ticket #42 — Bug de concurrence sur `POST /api/presences`
+
+**Fait** : diagnostic confirmé — `PresenceService.marquerPresence` faisait du check-then-insert sans `@Transactional` ni gestion de la violation de contrainte `uq_presence_session_etudiant` : deux étudiants saisissant le code quasi simultanément passaient tous deux le test de doublon, la seconde INSERT échouait en base et remontait en `500 ERREUR_INATTENDUE` au lieu du `409 DEJA_PRESENT` du contrat. Correctif minimal et ciblé : `@Transactional` sur `marquerPresence`, `presenceRepository.flush()` après le save pour faire surgir la violation de contrainte dans la transaction, capture de `DataIntegrityViolationException` → nouvelle exception métier `ConflitConcurrencePresenceException` (409 `DEJA_PRESENT`, même code/message que RG2), couverte par le `GlobalExceptionHandler` existant (aucune modification du handler, interdit). Test unitaire ajouté (`violationContrainteUniqueConcurrenteLevee409DejaPresent`) : save levant `DataIntegrityViolationException` → exception 409, compteur de tentatives non réinitialisé. Le premier étudiant reçoit 201, le second 409 : la liste du formateur est complète, plus aucune présence perdue.
+
+**Bloqué** : environ 15 min de débogage — des fichiers corrompus ont été générés par erreur pendant l'édition (`Presences.java`, dossier `src/main/json`, un fichier au nom tronqué) ; nettoyés avant tout commit, aucun n'a été commité. Aucun autre blocage.
+
+**IA** : l'IA a proposé le correctif (transaction + flush + traduction d'exception) et écrit le test. J'ai vérifié : ordre des vérifications inchangé (Q4), doublon « classique » toujours 409 sans incrément du compteur, comportement de `ajouterPresenceManuelle` inchangé, code/message d'erreur identiques au RG2, `mvnw compile` → BUILD SUCCESS, `mvnw test` → 6/6.
+
+**Commit** : `fix(42): presences concurrentes, 409 au lieu de 500 (Closes #42)`
 
 ### Ticket #1 — Init backend Spring Boot + frontend React Vite + Docker Compose
 
