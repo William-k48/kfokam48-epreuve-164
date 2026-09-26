@@ -176,3 +176,15 @@ feat/13-promotions-etudiants
 **IA** : m'a généré le routing, les 3 squelettes de pages et les styles. J'ai vérifié que les 3 routes sont déclarées et que la navigation fonctionne dans les 2 sens (liens `Link` de react-router), et `npm run build` → `✓ built in 6.7 s`.
 
 **Commit** : `feat(frontend): routing 3 routes et accueil (Closes #33)`
+
+---
+
+### Issue #29 — Écran formateur
+
+**Fait** : deux sections claires. « Ouvrir une session » : titre + promotion (liste déroulante `getPromotions`), appel `ouvrirSession`, puis affichage du code généré et des dates d'ouverture/expiration formatées en `fr-FR`. « Tableau de synthèse » : sélection d'une promotion → `getTableau(promotionId)` via `useApi`, colonnes `nom`, `presences`, `exercicesDeposes`, `moyenne`, `relecturesEnAttente`, nombres alignés à droite, lignes alternées, tableau scrollable horizontalement sur mobile. Moyenne « — » si `null` (décision A7), jamais recalculée (RG17). Erreurs affichées avec `error.message` (format `{ code, message }`), `PROMOTION_INCONNUE` reformatée en message lisible. Loading et error gérés dans chaque section indépendamment, boutons désactivés pendant le traitement.
+
+**Bloqué** : aucun blocage significatif.
+
+**IA** : m'a généré la page et les styles. J'ai vérifié la correspondance des champs avec `SessionResponse` (code, ouvertureAt, expirationAt) et `TableauLigneResponse`, que la moyenne nulle affiche « — » et qu'aucune règle métier n'est dupliquée côté front. `npm run build` → `✓ built in 0.7 s`.
+
+**Commit** : `feat(frontend): ecran formateur, session et tableau de synthese (Closes #29)`

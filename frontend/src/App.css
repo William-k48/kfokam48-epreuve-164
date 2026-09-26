@@ -67,8 +67,135 @@
   text-decoration: underline;
 }
 
+.section {
+  margin-top: 32px;
+}
+
+.section h2 {
+  margin-bottom: 16px;
+}
+
+.formulaire {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 480px;
+}
+
+.champ {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.champ label {
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.champ input,
+.champ select {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font: inherit;
+  color: var(--text-h);
+  background: var(--bg);
+}
+
+.champ input:focus-visible,
+.champ select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  border-color: var(--accent);
+}
+
+.bouton {
+  align-self: flex-start;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.bouton:hover:enabled {
+  filter: brightness(1.1);
+}
+
+.bouton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.message {
+  margin-top: 16px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  line-height: 1.5;
+}
+
+.message.erreur {
+  color: var(--erreur);
+  background: var(--erreur-bg);
+  border: 1px solid var(--erreur-border);
+}
+
+.message.succes {
+  color: var(--succes);
+  background: var(--succes-bg);
+  border: 1px solid var(--succes-border);
+}
+
+.code-session {
+  font-size: 20px;
+}
+
+.champ-tableau {
+  max-width: 480px;
+  margin-bottom: 16px;
+}
+
+.tableau-wrapper {
+  overflow-x: auto;
+}
+
+.tableau {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 15px;
+}
+
+.tableau th,
+.tableau td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+
+.tableau th {
+  color: var(--text-h);
+  font-weight: 600;
+}
+
+.tableau tbody tr:nth-child(even) {
+  background: var(--accent-bg);
+}
+
+.tableau .nombre {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
 @media (max-width: 480px) {
   .page {
     padding: 32px 16px 48px;
+  }
+
+  .bouton {
+    align-self: stretch;
   }
 }
