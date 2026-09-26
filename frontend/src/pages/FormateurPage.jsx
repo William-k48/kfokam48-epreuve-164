@@ -42,7 +42,9 @@ function FormateurPage() {
     error: erreurTableau,
   } = useApi(
     () =>
-      promotionTableauId ? getTableau(promotionTableauId) : Promise.resolve(null),
+      promotionTableauId
+        ? getTableau(Number(promotionTableauId))
+        : Promise.resolve(null),
     [promotionTableauId],
   )
 
