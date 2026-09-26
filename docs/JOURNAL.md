@@ -145,3 +145,13 @@ feat/13-promotions-etudiants
 
 
 ---
+
+### Issue #35 — Configuration CORS entre frontend et backend
+
+**Fait** : côté backend, `CorsConfig.java` créé from scratch dans `config/` (`@Configuration` + `WebMvcConfigurer`) sur `/api/**` : origines `http://localhost:4200` et `http://frontend:4200`, méthodes GET/POST/PATCH/PUT/DELETE/OPTIONS, headers `Content-Type` et `Authorization`, préflight en cache 1 h. Côté dev, proxy Vite `/api` → `http://localhost:8085` dans `vite.config.js`. Côté prod, `location /api/` → `http://backend:8085` (nom du service Docker Compose) dans `nginx.conf`. Les trois voies se complètent : CORS pour un navigateur qui joint directement le port 8085, proxys pour rester sur une seule origine (4200).
+
+**Bloqué** : aucun blocage significatif. Note : avec les proxys (dev et prod), le navigateur ne fait jamais de requête cross-origin, donc le CORS est une ceinture de sécurité supplémentaire plutôt que le chemin principal.
+
+**IA** : m'a généré `CorsConfig.java` (sans réutiliser la config CORS d'un autre projet), le bloc `proxy` de `vite.config.js` et le `location /api/` de `nginx.conf`. J'ai vérifié la conformité avec l'issue (origines, méthodes, headers), `mvnw compile` → `BUILD SUCCESS`, `npm run build` → build OK.
+
+**Commit** : `feat(cors): configure CORS backend + proxy Vite + Nginx (Closes #35)`

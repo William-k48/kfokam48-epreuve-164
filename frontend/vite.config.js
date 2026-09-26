@@ -10,6 +10,14 @@ export default defineConfig({
     watch: {
       usePolling: true,
     },
+    // Issue #35 : en dev, /api est relayé vers le backend pour rester sur une
+    // seule origine. En production, c'est Nginx qui assure ce relais.
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8085',
+        changeOrigin: true,
+      },
+    },
   },
   preview: {
     host: '0.0.0.0',
