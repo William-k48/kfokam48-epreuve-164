@@ -200,3 +200,15 @@ feat/13-promotions-etudiants
 **IA** : m'a généré la page. J'ai vérifié que les 4 codes d'erreur présence et 2 codes dépôt sont mappés exactement comme dans l'issue, que le nom du relecteur n'apparaît nulle part (RG7) et que la moyenne/notes ne sont jamais recalculées. `npm run build` → `✓ built in 0.7 s`.
 
 **Commit** : `feat(frontend): ecran etudiant presence depot et notes (Closes #30)`
+
+---
+
+### Issue #31 — Écran relecteur
+
+**Fait** : identification (promotion + étudiant) comme pour l'écran étudiant, puis liste des relectures `EN_ATTENTE` via `getRelecturesEtudiant` (filtre fait côté API — RG9). Un **formulaire par exercice** (composant `FormulaireRelecture`) avec lien cliquable, note (validation locale : entier 0–20 avant l'appel — décision A1) et commentaire. Erreurs mappées : `NOTE_INVALIDE`, `AUTO_RELECTURE`, `RELECTURE_DEJA_RENDUE`. Après un rendu réussi : confirmation visuelle et rafraîchissement de la liste — l'exercice relu disparaît (l'API ne retourne plus que les `EN_ATTENTE`). L'identité de l'auteur n'apparaît jamais (l'API ne l'expose pas, le front ne l'invente pas).
+
+**Bloqué** : aucun blocage significatif.
+
+**IA** : m'a généré la page et son composant enfant. J'ai vérifié la validation locale de la note (bouton désactivé si note absente, non entière ou hors bornes), que les 3 codes d'erreur sont mappés, et que rien ne révèle l'auteur. `npm run build` → `✓ built in 2.8 s`.
+
+**Commit** : `feat(frontend): ecran relecteur, relectures en attente et rendu de note (Closes #31)`
