@@ -164,3 +164,15 @@ feat/13-promotions-etudiants
 **IA** : m'a généré `CorsConfig.java` (sans réutiliser la config CORS d'un autre projet), le bloc `proxy` de `vite.config.js` et le `location /api/` de `nginx.conf`. J'ai vérifié la conformité avec l'issue (origines, méthodes, headers), `mvnw compile` → `BUILD SUCCESS`, `npm run build` → build OK.
 
 **Commit** : `feat(cors): configure CORS backend + proxy Vite + Nginx (Closes #35)`
+
+---
+
+### Issue #33 — Routing 3 routes
+
+**Fait** : `react-router-dom` (v7) installé (`package.json` + `package-lock.json` committés). `main.jsx` enveloppe `<App />` dans `<BrowserRouter>`. `App.jsx` remplacé : page d'accueil `/` (titre + 3 cartes cliquables vers `/formateur`, `/etudiant`, `/relecteur`) et `<Routes>` avec les 3 routes. 3 pages squelettes créées (`FormateurPage.jsx`, `EtudiantPage.jsx`, `RelecteurPage.jsx`) : titre, paragraphe « À venir », lien retour accueil — elles seront complétées aux issues #29/#30/#31. `App.css` et `index.css` allégés (suppression du template Vite), mise en page responsive (mobile 375 px) et focus visible pour l'accessibilité. `index.html` : `lang="fr"` + titre de l'application.
+
+**Bloqué** : aucun blocage significatif.
+
+**IA** : m'a généré le routing, les 3 squelettes de pages et les styles. J'ai vérifié que les 3 routes sont déclarées et que la navigation fonctionne dans les 2 sens (liens `Link` de react-router), et `npm run build` → `✓ built in 6.7 s`.
+
+**Commit** : `feat(frontend): routing 3 routes et accueil (Closes #33)`
