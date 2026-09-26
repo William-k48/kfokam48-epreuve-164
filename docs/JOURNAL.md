@@ -188,3 +188,15 @@ feat/13-promotions-etudiants
 **IA** : m'a généré la page et les styles. J'ai vérifié la correspondance des champs avec `SessionResponse` (code, ouvertureAt, expirationAt) et `TableauLigneResponse`, que la moyenne nulle affiche « — » et qu'aucune règle métier n'est dupliquée côté front. `npm run build` → `✓ built in 0.7 s`.
 
 **Commit** : `feat(frontend): ecran formateur, session et tableau de synthese (Closes #29)`
+
+---
+
+### Issue #30 — Écran étudiant
+
+**Fait** : identification en deux temps (promotion puis étudiant, via `getPromotions` + `getEtudiants`, EF19 sans mot de passe). Trois sections indépendantes avec leur propre état de chargement/erreur. « Marquer ma présence » : code 6 caractères → `marquerPresence`, erreurs métier mappées en messages lisibles (`CODE_INCONNU`, `DEJA_PRESENT`, `CODE_EXPIRE`, `TROP_DE_TENTATIVES`). « Déposer un exercice » : sessionId + lien → `deposerExercice`, erreurs `LIEN_INVALIDE` et `EXERCICE_DEJA_DEPOSE` mappées, confirmation avec le statut `EN_ATTENTE` retourné par l'API (RG17 : aucune logique métier côté front). « Mes exercices et notes » : `getExercicesEtudiant` affichant lien, statut, note (« — » si null) et commentaire — **jamais le nom du relecteur** (RG7, le DTO n'en contient pas). La liste se rafraîchit automatiquement après un dépôt réussi.
+
+**Bloqué** : aucun blocage significatif. Décision : le champ « Numéro de la session » est une saisie numérique — la promotion sélectionnée ne permet pas de connaître les sessions ouvertes, et le contrat n'expose aucun endpoint de listing des sessions.
+
+**IA** : m'a généré la page. J'ai vérifié que les 4 codes d'erreur présence et 2 codes dépôt sont mappés exactement comme dans l'issue, que le nom du relecteur n'apparaît nulle part (RG7) et que la moyenne/notes ne sont jamais recalculées. `npm run build` → `✓ built in 0.7 s`.
+
+**Commit** : `feat(frontend): ecran etudiant presence depot et notes (Closes #30)`
