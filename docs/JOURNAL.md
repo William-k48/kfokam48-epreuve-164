@@ -1,3 +1,17 @@
+### Issue #48 — Commit 8 : tests des composants UI
+
+**Fait** : `src/components/composants.test.jsx` — 12 nouveaux tests Vitest/Testing Library sur les 4 composants réutilisables : `Badge` (variante appliquée, défaut neutre) + `varianteNote` (5 cas de seuil : 16→succes, 10→alerte, 9→erreur, 20→succes, 0→erreur — verrouille la règle de couleur des badges) ; `Card` (titre + aria-labelledby, cas sans titre) ; `EmptyState` (role status, illustration, titre, texte) ; `Toast` (rien sans message, affichage avec role status, disparition à la durée exacte via `vi.useFakeTimers` — 2999 ms rien, 3000 ms fermeture). Total : **33 tests** (21 existants inchangés + 12 nouveaux).
+
+**Pas touché (logique métier)** : aucun — ce commit n'ajoute que des tests de composants visuels.
+
+**Bloqué** : aucun blocage significatif.
+
+**IA** : a écrit les 12 tests. Vérifié : `npx vitest run` → 33/33 (6 fichiers), `npm run lint` → 0 erreur (22 fichiers).
+
+**Commit** : `test(ui): teste les composants réutilisables`
+
+---
+
 ### Issue #48 — Commit 7 : composants réutilisables (Card, Badge, Toast, EmptyState)
 
 **Fait** : nouveau dossier `src/components/` avec 4 composants **purement visuels** : `Card.jsx` (bloc `.carte-bloc` avec titre optionnel), `Badge.jsx` (pill neutre/succes/alerte/erreur + helper exporté `varianteNote(note)` centralisant les seuils >15/10–15/<10, un seul endroit à modifier), `Toast.jsx` (notification fixe en bas d'écran, `role="status"`, disparition auto après 3 s, minuterie nettoyée au démontage), `EmptyState.jsx` (illustration + titre + texte, réutilise les styles `.relectures-vide`). Refactor : `RelecteurPage` utilise `EmptyState` (même markup résultant), `EtudiantPage` affiche la confirmation de présence via **Toast** (le message inline dupliqué a été retiré — le doublon d'information était une faute d'UX ; le Toast est le « feedback visuel immédiat » demandé). Style `.toast` ajouté à `App.css`.
