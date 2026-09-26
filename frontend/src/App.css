@@ -154,6 +154,37 @@
   font-size: 20px;
 }
 
+.formulaire-relecture {
+  margin: 16px 0;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.legende {
+  margin-bottom: 12px;
+}
+
+.champ-note input {
+  max-width: 120px;
+}
+
+.champ textarea {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font: inherit;
+  color: var(--text-h);
+  background: var(--bg);
+  resize: vertical;
+}
+
+.champ textarea:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  border-color: var(--accent);
+}
+
 .champ-tableau {
   max-width: 480px;
   margin-bottom: 16px;
