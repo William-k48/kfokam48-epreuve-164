@@ -1,3 +1,58 @@
+
+### Issue #47 — Affichage de la note provisoire (frontend)
+
+**Fait** : écran étudiant, section « Mes exercices et notes » : quand `noteProvisoire` vaut `true` (un seul des deux relecteurs a rendu — RG5 v2, contrat v1.1), la note est suivie de la mention italique « (provisoire) » (style `.note-provisoire` dans `App.css`) ; `noteProvisoire` à `false` (deux relectures rendues, note définitive) ou `null` (aucune relecture rendue, note « — ») n'affiche aucune mention. Aucune logique métier côté front (RG17) : le flag vient tel quel de `GET /api/etudiants/{id}/exercices`, la moyenne est celle calculée par l'API. `client.js` inchangé (les signatures n'ont pas changé). Test Vitest ajouté : note 12 + `noteProvisoire: true` → « 12 » + « provisoire » affichés, exercice sans relecture → « — ».
+
+**Bloqué** : aucun blocage significatif. Point de vigilance respecté : la mention ne s'affiche QUE sur `noteProvisoire === true` strict — un exercice sans note (`noteProvisoire: null`) ne doit pas être marqué provisoire.
+
+**IA** : m'a modifié la page, le style et le test. J'ai vérifié que la mention apparaît/disparaît selon les 3 valeurs du flag, que le RG7 reste respecté (aucune mention de relecteur), et `npm run build` → OK, `npm test` → 21/21, `npm run lint` → 0 erreur.
+
+**Commit** : `feat(frontend): affiche la note provisoire (#47)`
+
+
+### Issue #46 — Deux relecteurs et note moyenne (services backend)
+
+**Fait** : adaptation des services à RG5 v2/décision A9 : `ExerciceService.deposerExercice` (désormais `@Transactional`) assigne DEUX relecteurs DISTINCTS tirés au hasard parmi les présents hors auteur (`Collections.shuffle` + `limit(2)`, 1 seul si un seul candidat — RG14 v2) et construit les `AssignationRelecture` via `exercice.ajouterAssignation` ; `reassignerRelecteur` (RG15 v2) complète la 2ᵉ assignation si l'exercice en a moins de 2, ou remplace le premier relecteur qui n'a PAS encore rendu (un relecteur ayant rendu est figé, RG9) ; `RelectureService.rendreRelecture` implémente la décision A10 (sans auth, l'appel émane de l'assigné qui n'a pas encore rendu) : 1ʳᵉ relecture rendue → l'exercice RESTE `EN_ATTENTE` (note provisoire), 2ᵉ → passage `RELUE`, les deux rendues → `409 RELECTURE_DEJA_RENDUE` ; `EtudiantService` calcule la note retenue (moyenne des relectures rendues, arrondie à l'entier le plus proche) et expose le nouveau champ `noteProvisoire` (true/false/null) dans `ExerciceEtudiantResponse` (RG7 inchangé : aucun champ relecteur) ; `TableauService.calculerMoyenne` calcule désormais la moyenne sur les notes RETENUES exercice par exercice (moyenne des moyennes, notes provisoires incluses conformément au contrat v1.1) et `relecturesEnAttente` compte les exercices où l'étudiant est assigné sans avoir rendu (via `AssignationRelectureRepository`) ; `RelectureEnAttenteService` liste les exercices assignés à l'étudiant où il n'a pas encore rendu. Test unitaire `RelectureServiceTest` (3 tests) : 1ʳᵉ relecture → statut `EN_ATTENTE` sans save exercice, 2ᵉ → `RELUE` + save, double rendu → `RelectureDejaRendueException`.
+
+**Bloqué** : environ 20 min sur deux soucis révélés par les tests : (1) NPE sur des entités non persistées (id null) dans les comparaisons d'identité — corrigé par une comparaison référence-puis-id (`memeEtudiant`) dans `RelectureService` ; (2) `UnnecessaryStubbing` de Mockito sur le test RG9 (le stub des assignations n'est pas atteint) — corrigé avec `lenient()`. Par ailleurs, `mvnw test` exécute aussi un `CorsSmokeTempTest` présent dans target mais absent des sources (résidu de build) : sans incidence, 8/8 verts.
+
+**IA** : m'a adapté les 5 services et écrit les 3 tests. J'ai vérifié : ordre des vérifications de `rendreRelecture` cohérent avec le D5 (exercice → RG9 → note → A10 → RG4), la note retournée par `POST /api/relectures/{id}` reste celle de la relecture qui vient d'être rendue (contrat B2 inchangé), la moyenne du tableau suit RG16/RG17 v1.1, `mvnw compile` → BUILD SUCCESS, `mvnw test` → 8/8 (dont 3 nouveaux).
+
+**Commit** : `feat(relectures): deux relecteurs et note moyenne (#46)`
+
+
+### Issue #45 — Migration Flyway V3 : deux relecteurs par exercice
+
+**Fait** : `backend/src/main/resources/db/migration/V3__deux_relecteurs.sql` (aucune migration existante modifiée, B5) : création de la table `assignation_relecture` (id, exercice_id, relecteur_id, assignee_at, UNIQUE(exercice_id, relecteur_id) garantissant des relecteurs DISTINCTS, index sur les deux FK) ; transfert des assignations existantes (INSERT ... SELECT depuis `exercice.relecteur_id` non null) ; remplacement de la contrainte `uq_relecture_exercice` (une relecture par exercice) par `uq_relecture_exercice_relecteur` (UNE relecture par couple exercice/relecteur — RG9 v2) ; suppression de la colonne `exercice.relecteur_id` (et de sa FK + index). Entités alignées : nouvelle `AssignationRelecture`, `Exercice` avec `@OneToMany` vers ses assignations (cascade ALL, orphanRemoval) et méthode `ajouterAssignation`, `Relecture` passée de `@OneToOne` à `@ManyToOne` sur exercice avec UNIQUE(exercice_id, relecteur_id).
+
+**Bloqué** : environ 10 min sur une première version de la migration contenant un CHECK aberrant (`relecteur_id <> relecteur_id`, toujours faux, aurait bloqué tout INSERT) — détecté en relisant le SQL avant exécution, retiré ; la limite « au plus 2 relecteurs par exercice » (RG5 v2) est contrôlée en service, comme l'unicité du couple l'est par la contrainte. Testé sur PostgreSQL 16 jetable (Docker) : Flyway applique V1 puis V3 (`Migrating schema "public" to version "3 - deux relecteurs"`, `Successfully applied 2 migrations`), Hibernate `ddl-auto=validate` passe, application démarre avec données de démo. Premier essai interrompu par « Port 8085 already in use » (backend déjà lancé sur le poste) — contourné avec SERVER_PORT=0.
+
+**IA** : m'a généré la migration SQL, l'entité `AssignationRelecture` et mis à jour `Exercice`/`Relecture`. J'ai vérifié que la migration est purement additive (V1/V2 intacts), que le transfert de données préserve les relecteurs existants, et que `validate` n'émet aucune divergence schéma/entités.
+
+**Commit** : `feat(db): migration V3 deux relecteurs par exercice (#45)`
+
+
+### Issue #44 — Contrat d'API v1.1 : flag provisoire sur la note
+
+**Fait** : `api/contrat.yaml` passé en version **1.1** : description d'en-tête décrivant le passage à 2 relecteurs (décision A9) ; `GET /api/etudiants/{id}/exercices` documente `note` (moyenne des relectures rendues) et le nouveau champ **`noteProvisoire`** (boolean nullable : true tant qu'un seul des 2 relecteurs a rendu, false quand les deux ont rendu, null si aucune relecture) ; `POST /api/relectures/{id}` décrit le statut de retour (`EN_ATTENTE` après la 1re des 2 relectures, `RELUE` après la 2e avec note = moyenne) et la règle d'identification du relecteur (décision A10) ; descriptions v1.1 ajoutées sur `/api/exercices` (2 relecteurs assignés au dépôt), `/api/tableau` (moyenne sur notes retenues), `/api/exercices/{id}/relecteur` (réassignation ou complément, RG15 v2) et `/api/etudiants/{id}/relectures` (exercices où CE relecteur n'a pas encore rendu). Chemins, verbes, codes de statut et format d'erreur des 5 opérations imposées **inchangés** (B2).
+
+**Bloqué** : aucun blocage significatif. Vérification syntaxique : le YAML a été rechargé avec js-yaml (installé sans l'ajouter à package.json) → parse OK, 12 chemins, `noteProvisoire` présent ; un défaut de jointure `type: array items:` introduit pendant l'édition a été détecté et corrigé avant commit.
+
+**IA** : m'a rédigé les modifications du contrat. J'ai vérifié que les 5 opérations imposées gardent leurs chemins/verbes/codes/format d'erreur à la lettre, que le champ `noteProvisoire` est nullable et aligné sur la décision A9, et que le YAML parse sans erreur.
+
+**Commit** : `api(contrat): ajoute le flag provisoire sur la note (#44)`
+
+
+### Issue #43 — Analyse mise à jour : passage à 2 relecteurs
+
+**Fait** : mise à jour complète des livrables d'analyse pour le changement de besoin (décision A9) : CAHIER_DES_CHARGES.md (note « changements depuis la v2 », RG5 v2 « deux relecteurs différents + moyenne + provisoire », RG6 v2 « deux relecteurs distincts parmi les présents », RG9 v2 « RELUE quand les deux ont rendu », RG14/RG15 v2, EF9/EF12/EF15 v2, nouvelles décisions A9 et A10 en section 7, B5 « V3 ajoutée, jamais modifiée »), diagramme D2 (nouvelle entité `AssignationRelecture` 1..2 par exercice, Exercice sans plus de `relecteurId`, Relecture 0..2 avec UNIQUE(exercice_id, relecteur_id), correspondances RG et migrations à jour) et diagramme D4 (la 1re relecture rendue ne fait plus passer l'exercice RELUE : auto-transition EN_ATTENTE avec note provisoire ; RELUE à la 2e). Nouveau diagramme D5 `d5-sequence-relecture.md` : séquence de rendu de relecture à 2 relecteurs avec branches 200 provisoire / 200 définitive (moyenne) / 404 / 400 / 403 / 409, et règle d'identification du relecteur (décision A10, sans auth).
+
+**Bloqué** : aucun blocage significatif. Point d'attention tranché dans A10 : le contrat imposé `POST /api/relectures/{id}` ne transporte pas l'identité du relecteur — sans auth, le backend considère que l'appel émane du relecteur assigné qui n'a pas encore rendu ; resoumission → 409 (RG9 inchangé).
+
+**IA** : m'a rédigé les mises à jour du CDC et des diagrammes D2/D4 et le nouveau D5. J'ai vérifié la cohérence croisée : chaque mention « un seul relecteur » du CDC est soit mise à jour soit explicitement marquée v2 ; D2 correspond désormais à la future V3 (assignation_relecture, UNIQUE(exercice_id, relecteur_id) sur relecture, suppression de relecteur_id sur exercice) ; D4 et D5 décrivent le même flux que A9/A10.
+
+**Commit** : `docs(analyse): mise a jour suite au passage a 2 relecteurs (#43)`
+
 ### Ticket #42 — Bug de concurrence sur `POST /api/presences`
 
 **Fait** : diagnostic confirmé — `PresenceService.marquerPresence` faisait du check-then-insert sans `@Transactional` ni gestion de la violation de contrainte `uq_presence_session_etudiant` : deux étudiants saisissant le code quasi simultanément passaient tous deux le test de doublon, la seconde INSERT échouait en base et remontait en `500 ERREUR_INATTENDUE` au lieu du `409 DEJA_PRESENT` du contrat. Correctif minimal et ciblé : `@Transactional` sur `marquerPresence`, `presenceRepository.flush()` après le save pour faire surgir la violation de contrainte dans la transaction, capture de `DataIntegrityViolationException` → nouvelle exception métier `ConflitConcurrencePresenceException` (409 `DEJA_PRESENT`, même code/message que RG2), couverte par le `GlobalExceptionHandler` existant (aucune modification du handler, interdit). Test unitaire ajouté (`violationContrainteUniqueConcurrenteLevee409DejaPresent`) : save levant `DataIntegrityViolationException` → exception 409, compteur de tentatives non réinitialisé. Le premier étudiant reçoit 201, le second 409 : la liste du formateur est complète, plus aucune présence perdue.
@@ -7,8 +62,6 @@
 **IA** : l'IA a proposé le correctif (transaction + flush + traduction d'exception) et écrit le test. J'ai vérifié : ordre des vérifications inchangé (Q4), doublon « classique » toujours 409 sans incrément du compteur, comportement de `ajouterPresenceManuelle` inchangé, code/message d'erreur identiques au RG2, `mvnw compile` → BUILD SUCCESS, `mvnw test` → 6/6.
 
 **Commit** : `fix(42): presences concurrentes, 409 au lieu de 500 (Closes #42)`
-
----
 
 ### Ticket #1 — Init backend Spring Boot + frontend React Vite + Docker Compose
 

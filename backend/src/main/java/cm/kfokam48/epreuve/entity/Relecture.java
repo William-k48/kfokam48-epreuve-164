@@ -8,27 +8,38 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import java.time.LocalDateTime;
 
 /**
- * Relecture définitive d'un exercice (RG9 : une seule par exercice, décision A1).
- * Table relecture (V1__init.sql) : exercice_id UNIQUE, relecteur_id NOT NULL,
+ * Relecture d'un exercice rendue par un de ses relecteurs.
+ * v2 (itération 3, décision A9) : un exercice possède DEUX relecteurs ;
+ * il y a donc UNE relecture par couple (exercice, relecteur) —
+ * UNIQUE(exercice_id, relecteur_id) depuis V3 — et la note retenue est la
+ * moyenne des relectures rendues (provisoire tant qu'un seul a rendu).
+ * Table relecture (V1__init.sql, modifiée par V3) : relecteur_id NOT NULL,
  * note INTEGER CHECK 0-20 (RG8), commentaire TEXT, rendue_at TIMESTAMP.
  */
 @Entity
-@Table(name = "relecture")
+@Table(name = "relecture",
+       uniqueConstraints = @UniqueConstraint(
+               name = "uq_relecture_exercice_relecteur",
+               columnNames = {"exercice_id", "relecteur_id"}))
 public class Relecture {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @OneToOne(optional = false, fetch = FetchType.LAZY)
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "exercice_id", nullable = false)
     private Exercice exercice;
 
+    /**
+     * v2 : le relecteur de CETTE relecture (l'un des deux relecteurs assignés
+     * de l'exercice). Tient lieu d'identification sans auth (décision A10).
+     */
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "relecteur_id", nullable = false)
     private Etudiant relecteur;

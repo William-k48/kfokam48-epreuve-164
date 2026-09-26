@@ -85,6 +85,7 @@ describe('EtudiantPage', () => {
         lien: 'https://exercice.example/5',
         statut: 'RELUE',
         note: 15,
+        noteProvisoire: false,
         commentaire: 'Bon travail.',
       },
     ])
@@ -95,5 +96,41 @@ describe('EtudiantPage', () => {
     expect(await screen.findByText('Bon travail.')).toBeInTheDocument()
     expect(screen.getByText('RELUE')).toBeInTheDocument()
     expect(screen.queryByText(/relecteur/i)).not.toBeInTheDocument()
+  })
+
+  it('affiche la mention (provisoire) quand un seul des deux relecteurs a rendu (RG5 v2)', async () => {
+    const user = userEvent.setup()
+    getExercicesEtudiant.mockResolvedValue([
+      {
+        id: 6,
+        sessionId: 1,
+        lien: 'https://exercice.example/6',
+        statut: 'EN_ATTENTE',
+        note: 12,
+        noteProvisoire: true,
+        commentaire: 'Correct mais rapidement traite.',
+      },
+      {
+        id: 7,
+        sessionId: 1,
+        lien: 'https://exercice.example/7',
+        statut: 'EN_ATTENTE',
+        note: null,
+        noteProvisoire: null,
+        commentaire: null,
+      },
+    ])
+
+    renderPage()
+    await identifier(user)
+
+    expect(await screen.findByText('12')).toBeInTheDocument()
+    expect(screen.getByText(/provisoire/i)).toBeInTheDocument()
+    // Aucune note affichée quand aucune relecture n'est rendue (noteProvisoire null) :
+    // la ligne du second exercice ne porte aucune mention (provisoire)
+    const celluleNoteExercice7 = screen.getByText('Correct mais rapidement traite.').closest('tr')
+      ?.nextElementSibling
+    expect(celluleNoteExercice7).not.toBeNull()
+    expect(celluleNoteExercice7.textContent).not.toMatch(/provisoire/i)
   })
 })

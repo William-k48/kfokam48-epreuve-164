@@ -1,5 +1,6 @@
 package cm.kfokam48.epreuve.config;
 
+import cm.kfokam48.epreuve.entity.AssignationRelecture;
 import cm.kfokam48.epreuve.entity.Etudiant;
 import cm.kfokam48.epreuve.entity.Exercice;
 import cm.kfokam48.epreuve.entity.Presence;
@@ -8,6 +9,7 @@ import cm.kfokam48.epreuve.entity.Relecture;
 import cm.kfokam48.epreuve.entity.Session;
 import cm.kfokam48.epreuve.entity.SourcePresence;
 import cm.kfokam48.epreuve.entity.StatutExercice;
+import cm.kfokam48.epreuve.repository.AssignationRelectureRepository;
 import cm.kfokam48.epreuve.repository.EtudiantRepository;
 import cm.kfokam48.epreuve.repository.ExerciceRepository;
 import cm.kfokam48.epreuve.repository.PresenceRepository;
@@ -34,6 +36,7 @@ public class DataInitializer implements CommandLineRunner {
     private final SessionRepository sessionRepository;
     private final PresenceRepository presenceRepository;
     private final ExerciceRepository exerciceRepository;
+    private final AssignationRelectureRepository assignationRelectureRepository;
     private final RelectureRepository relectureRepository;
 
     public DataInitializer(PromotionRepository promotionRepository,
@@ -41,12 +44,14 @@ public class DataInitializer implements CommandLineRunner {
                            SessionRepository sessionRepository,
                            PresenceRepository presenceRepository,
                            ExerciceRepository exerciceRepository,
+                           AssignationRelectureRepository assignationRelectureRepository,
                            RelectureRepository relectureRepository) {
         this.promotionRepository = promotionRepository;
         this.etudiantRepository = etudiantRepository;
         this.sessionRepository = sessionRepository;
         this.presenceRepository = presenceRepository;
         this.exerciceRepository = exerciceRepository;
+        this.assignationRelectureRepository = assignationRelectureRepository;
         this.relectureRepository = relectureRepository;
     }
 
@@ -77,28 +82,44 @@ public class DataInitializer implements CommandLineRunner {
                     session, present, SourcePresence.ETUDIANT, LocalDateTime.now()));
         }
 
-        // 3 exercices : 2 relus (tableau non vide), 1 en attente de relecture
+        // 3 exercices : 1 relu par 2 relecteurs (définitif), 1 avec 1 relecture rendue
+        // (provisoire) + 2e relecteur assigné, 1 sans aucune relecture rendue —
+        // pour illustrer les 3 états de la règle RG5 v2 (décision A9)
         Etudiant auteur1 = etudiants.get(0);
         Etudiant auteur2 = etudiants.get(1);
         Etudiant auteur3 = etudiants.get(2);
-        Etudiant relecteur1 = etudiants.get(3);
-        Etudiant relecteur2 = etudiants.get(4);
-        Etudiant relecteur3 = etudiants.get(5);
+        Etudiant relecteurA1 = etudiants.get(3);
+        Etudiant relecteurB1 = etudiants.get(4);
+        Etudiant relecteurA2 = etudiants.get(5);
+        Etudiant relecteurB2 = etudiants.get(6);
+        Etudiant relecteurA3 = etudiants.get(7);
+        Etudiant relecteurB3 = etudiants.get(8);
 
+        // Exercice 1 : les DEUX relectures rendues → RELUE, note définitive (14+17)/2 = 15,5
         Exercice exercice1 = exerciceRepository.save(new Exercice(session, auteur1,
                 "https://example.com/demo/exercice-1.pdf", StatutExercice.RELUE,
-                LocalDateTime.now(), relecteur1));
-        Exercice exercice2 = exerciceRepository.save(new Exercice(session, auteur2,
-                "https://example.com/demo/exercice-2.pdf", StatutExercice.RELUE,
-                LocalDateTime.now(), relecteur2));
-        exerciceRepository.save(new Exercice(session, auteur3,
-                "https://example.com/demo/exercice-3.pdf", StatutExercice.EN_ATTENTE,
-                LocalDateTime.now(), relecteur3));
-
-        // RG9 : une relecture définitive par exercice relu
-        relectureRepository.save(new Relecture(exercice1, relecteur1, 14,
+                LocalDateTime.now()));
+        assignationRelectureRepository.save(new AssignationRelecture(exercice1, relecteurA1, LocalDateTime.now()));
+        assignationRelectureRepository.save(new AssignationRelecture(exercice1, relecteurB1, LocalDateTime.now()));
+        relectureRepository.save(new Relecture(exercice1, relecteurA1, 14,
                 "Bon travail, etoffe la partie 2.", LocalDateTime.now()));
-        relectureRepository.save(new Relecture(exercice2, relecteur2, 17,
+        relectureRepository.save(new Relecture(exercice1, relecteurB1, 17,
                 "Tres complet et bien structure.", LocalDateTime.now()));
+
+        // Exercice 2 : UNE relecture rendue sur deux → EN_ATTENTE, note provisoire 12
+        Exercice exercice2 = exerciceRepository.save(new Exercice(session, auteur2,
+                "https://example.com/demo/exercice-2.pdf", StatutExercice.EN_ATTENTE,
+                LocalDateTime.now()));
+        assignationRelectureRepository.save(new AssignationRelecture(exercice2, relecteurA2, LocalDateTime.now()));
+        assignationRelectureRepository.save(new AssignationRelecture(exercice2, relecteurB2, LocalDateTime.now()));
+        relectureRepository.save(new Relecture(exercice2, relecteurA2, 12,
+                "Correct mais rapidement traite.", LocalDateTime.now()));
+
+        // Exercice 3 : aucune relecture rendue (2 relecteurs assignés) → EN_ATTENTE, pas de note
+        Exercice exercice3 = exerciceRepository.save(new Exercice(session, auteur3,
+                "https://example.com/demo/exercice-3.pdf", StatutExercice.EN_ATTENTE,
+                LocalDateTime.now()));
+        assignationRelectureRepository.save(new AssignationRelecture(exercice3, relecteurA3, LocalDateTime.now()));
+        assignationRelectureRepository.save(new AssignationRelecture(exercice3, relecteurB3, LocalDateTime.now()));
     }
 }
