@@ -1,3 +1,15 @@
+### Issue #45 — Migration Flyway V3 : deux relecteurs par exercice
+
+**Fait** : `backend/src/main/resources/db/migration/V3__deux_relecteurs.sql` (aucune migration existante modifiée, B5) : création de la table `assignation_relecture` (id, exercice_id, relecteur_id, assignee_at, UNIQUE(exercice_id, relecteur_id) garantissant des relecteurs DISTINCTS, index sur les deux FK) ; transfert des assignations existantes (INSERT ... SELECT depuis `exercice.relecteur_id` non null) ; remplacement de la contrainte `uq_relecture_exercice` (une relecture par exercice) par `uq_relecture_exercice_relecteur` (UNE relecture par couple exercice/relecteur — RG9 v2) ; suppression de la colonne `exercice.relecteur_id` (et de sa FK + index). Entités alignées : nouvelle `AssignationRelecture`, `Exercice` avec `@OneToMany` vers ses assignations (cascade ALL, orphanRemoval) et méthode `ajouterAssignation`, `Relecture` passée de `@OneToOne` à `@ManyToOne` sur exercice avec UNIQUE(exercice_id, relecteur_id).
+
+**Bloqué** : environ 10 min sur une première version de la migration contenant un CHECK aberrant (`relecteur_id <> relecteur_id`, toujours faux, aurait bloqué tout INSERT) — détecté en relisant le SQL avant exécution, retiré ; la limite « au plus 2 relecteurs par exercice » (RG5 v2) est contrôlée en service, comme l'unicité du couple l'est par la contrainte. Testé sur PostgreSQL 16 jetable (Docker) : Flyway applique V1 puis V3 (`Migrating schema "public" to version "3 - deux relecteurs"`, `Successfully applied 2 migrations`), Hibernate `ddl-auto=validate` passe, application démarre avec données de démo. Premier essai interrompu par « Port 8085 already in use » (backend déjà lancé sur le poste) — contourné avec SERVER_PORT=0.
+
+**IA** : m'a généré la migration SQL, l'entité `AssignationRelecture` et mis à jour `Exercice`/`Relecture`. J'ai vérifié que la migration est purement additive (V1/V2 intacts), que le transfert de données préserve les relecteurs existants, et que `validate` n'émet aucune divergence schéma/entités.
+
+**Commit** : `feat(db): migration V3 deux relecteurs par exercice (#45)`
+
+---
+
 ### Issue #44 — Contrat d'API v1.1 : flag provisoire sur la note
 
 **Fait** : `api/contrat.yaml` passé en version **1.1** : description d'en-tête décrivant le passage à 2 relecteurs (décision A9) ; `GET /api/etudiants/{id}/exercices` documente `note` (moyenne des relectures rendues) et le nouveau champ **`noteProvisoire`** (boolean nullable : true tant qu'un seul des 2 relecteurs a rendu, false quand les deux ont rendu, null si aucune relecture) ; `POST /api/relectures/{id}` décrit le statut de retour (`EN_ATTENTE` après la 1re des 2 relectures, `RELUE` après la 2e avec note = moyenne) et la règle d'identification du relecteur (décision A10) ; descriptions v1.1 ajoutées sur `/api/exercices` (2 relecteurs assignés au dépôt), `/api/tableau` (moyenne sur notes retenues), `/api/exercices/{id}/relecteur` (réassignation ou complément, RG15 v2) et `/api/etudiants/{id}/relectures` (exercices où CE relecteur n'a pas encore rendu). Chemins, verbes, codes de statut et format d'erreur des 5 opérations imposées **inchangés** (B2).

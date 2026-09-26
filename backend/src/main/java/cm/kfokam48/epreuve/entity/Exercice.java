@@ -1,5 +1,6 @@
 package cm.kfokam48.epreuve.entity;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -10,14 +11,20 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
- * Exercice déposé par un étudiant dans une session, avec relecteur optionnel (décision A2).
+ * Exercice déposé par un étudiant dans une session.
+ * v2 (itération 3, décision A9) : l'exercice possède DEUX relecteurs distincts
+ * via les AssignationRelecture (table assignation_relecture, V3) — la colonne
+ * exercice.relecteur_id a été supprimée par V3__deux_relecteurs.sql.
  * Table exercice (V1__init.sql) : lien VARCHAR(500), statut VARCHAR(20)
- * CHECK IN ('EN_ATTENTE','RELUE'), depose_at TIMESTAMP NOT NULL DEFAULT NOW(),
- * relecteur_id BIGINT NULL (UNIQUE(session_id, etudiant_id)).
+ * CHECK IN ('EN_ATTENTE','RELUE'), depose_at TIMESTAMP NOT NULL,
+ * UNIQUE(session_id, etudiant_id).
  */
 @Entity
 @Table(name = "exercice")
@@ -45,21 +52,31 @@ public class Exercice {
     @Column(name = "depose_at", nullable = false)
     private LocalDateTime deposeAt;
 
-    @ManyToOne(optional = true, fetch = FetchType.LAZY)
-    @JoinColumn(name = "relecteur_id", nullable = true)
-    private Etudiant relecteur;
+    /**
+     * RG5 v2 : au plus 2 relecteurs distincts, une ligne AssignationRelecture
+     * par relecteur assigné (0, 1 ou 2 lignes). Cascadé : les assignations
+     * n'existent que rattachées à leur exercice.
+     */
+    @OneToMany(mappedBy = "exercice", fetch = FetchType.LAZY,
+               cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<AssignationRelecture> assignationsRelecture = new ArrayList<>();
 
     public Exercice() {
     }
 
-    public Exercice(Session session, Etudiant etudiant, String lien, StatutExercice statut,
-                    LocalDateTime deposeAt, Etudiant relecteur) {
+    public Exercice(Session session, Etudiant etudiant, String lien,
+                    StatutExercice statut, LocalDateTime deposeAt) {
         this.session = session;
         this.etudiant = etudiant;
         this.lien = lien;
         this.statut = statut;
         this.deposeAt = deposeAt;
-        this.relecteur = relecteur;
+    }
+
+    /** Ajoute une assignation de relecteur en maintenant les deux côtés de la relation. */
+    public void ajouterAssignation(AssignationRelecture assignation) {
+        assignationsRelecture.add(assignation);
+        assignation.setExercice(this);
     }
 
     public Long getId() {
@@ -110,11 +127,7 @@ public class Exercice {
         this.deposeAt = deposeAt;
     }
 
-    public Etudiant getRelecteur() {
-        return relecteur;
-    }
-
-    public void setRelecteur(Etudiant relecteur) {
-        this.relecteur = relecteur;
+    public List<AssignationRelecture> getAssignationsRelecture() {
+        return assignationsRelecture;
     }
 }
