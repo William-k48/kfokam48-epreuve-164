@@ -41,7 +41,13 @@ classDiagram
         +String lien
         +StatutExercice statut
         +LocalDateTime deposeAt
+    }
+
+    class AssignationRelecture {
+        +Long id
+        +Long exerciceId
         +Long relecteurId
+        +LocalDateTime assigneeAt
     }
 
     class Relecture {
@@ -72,8 +78,9 @@ classDiagram
     Etudiant "1" --> "0..*" Presence : marque
     Session "1" --> "0..*" Exercice : reçoit
     Etudiant "1" --> "0..*" Exercice : dépose
-    Etudiant "0..1" --> "0..*" Exercice : relit (relecteurId)
-    Exercice "1" --> "0..1" Relecture : donne lieu à
+    Etudiant "1" --> "0..*" AssignationRelecture : reçoit (relecteurId)
+    Exercice "1" --> "1..2" AssignationRelecture : est assigné à
+    Exercice "1" --> "0..2" Relecture : donne lieu à (une par relecteur)
     Etudiant "1" --> "0..*" Relecture : rédige (relecteurId)
 
     %% Utilisation des énumérations
@@ -98,8 +105,9 @@ classDiagram
 | **Etudiant** | Étudiant appartenant à une promotion | FK vers `Promotion` |
 | **Session** | Session de cours ouverte par le formateur, avec code et expiration | FK vers `Promotion`. Champ `cloturee` pour Q12 (dépôt possible jusqu'à clôture) |
 | **Presence** | Présence d'un étudiant à une session | FK vers `Session` et `Etudiant`. Enum `source` (Q14) |
-| **Exercice** | Dépôt du lien d'un exercice par un étudiant pour une session | FK vers `Session` et `Etudiant`. `relecteurId` nullable (décision A2 : « relecteur à assigner »). Enum `statut` |
-| **Relecture** | Note entière 0–20 + commentaire rendue par un relecteur | FK vers `Exercice` et `Etudiant` (le relecteur) |
+| **Exercice** | Dépôt du lien d'un exercice par un étudiant pour une session | FK vers `Session` et `Etudiant`. Deux relecteurs via `AssignationRelecture` (RG5 v2, décision A9). Enum `statut` |
+| **AssignationRelecture** | Assignation d'un relecteur à un exercice (au plus 2 par exercice, décision A9) | FK vers `Exercice` et `Etudiant`. UNIQUE(exerciceId, relecteurId) |
+| **Relecture** | Note entière 0–20 + commentaire rendue par un relecteur | FK vers `Exercice` et `Etudiant` (le relecteur). Une seule relecture par couple (exercice, relecteur) |
 
 ## Correspondance avec les règles de gestion
 
@@ -107,12 +115,12 @@ classDiagram
 |---|---|
 | **RG1** (code expire 15 min) | `Session.expirationAt` |
 | **RG2** (présence unique par session) | Contrainte `UNIQUE(sessionId, etudiantId)` sur `Presence` |
-| **RG5** (un seul relecteur) | `Exercice.relecteurId` est un `Long` unique, pas une collection |
-| **RG6** (relecteur parmi les présents, hors auteur) | `Exercice.relecteurId` référence un `Etudiant` ayant une `Presence` à la session, différent de `etudiantId` |
+| **RG5 v2** (deux relecteurs distincts) | Table `AssignationRelecture` : au plus 2 lignes par `exerciceId`, relecteurs distincts (UNIQUE(exerciceId, relecteurId)) |
+| **RG6 v2** (relecteurs parmi les présents, hors auteur) | `AssignationRelecture.relecteurId` référence un `Etudiant` ayant une `Presence` à la session, différent de `etudiantId` |
 | **RG8** (note entière 0–20) | `Relecture.note : Integer` (validation en service) |
 | **RG9** (relecture définitive) | `Relecture.rendueAt` non nul = verrou |
 | **RG13** (source ETUDIANT ou FORMATEUR) | Enum `SourcePresence` |
-| **RG14** (aucun relecteur → EN_ATTENTE) | `Exercice.relecteurId` nullable + `statut = EN_ATTENTE` |
+| **RG14** (0 ou 1 relecteur → EN_ATTENTE) | `AssignationRelecture` avec 0 ou 1 ligne pour l'exercice + `statut = EN_ATTENTE` |
 
 ## Correspondance avec les futures migrations Flyway
 
@@ -124,5 +132,6 @@ Ce diagramme sera traduit en SQL dans `V1__init.sql` :
 | `etudiant` | Etudiant | PK `id`, FK `promotion_id` |
 | `session` | Session | PK `id`, FK `promotion_id`, index sur `code` |
 | `presence` | Presence | PK `id`, FK `session_id`, FK `etudiant_id`, UNIQUE(session_id, etudiant_id) |
-| `exercice` | Exercice | PK `id`, FK `session_id`, FK `etudiant_id`, FK `relecteur_id` nullable, UNIQUE(session_id, etudiant_id) |
-| `relecture` | Relecture | PK `id`, FK `exercice_id` UNIQUE, FK `relecteur_id`, CHECK `note BETWEEN 0 AND 20` |
+| `exercice` | Exercice | PK `id`, FK `session_id`, FK `etudiant_id`, UNIQUE(session_id, etudiant_id) (v2 : la colonne `relecteur_id` est retirée par `V3__deux_relecteurs.sql`) |
+| `assignation_relecture` | AssignationRelecture | PK `id`, FK `exercice_id`, FK `relecteur_id`, UNIQUE(exercice_id, relecteur_id) (v2 : au plus 2 lignes par exercice, contrôlé en service) |
+| `relecture` | Relecture | PK `id`, FK `exercice_id`, FK `relecteur_id`, UNIQUE(exercice_id, relecteur_id) (v2 : remplace UNIQUE(exercice_id)), CHECK `note BETWEEN 0 AND 20` |

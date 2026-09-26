@@ -1,3 +1,15 @@
+### Issue #43 — Analyse mise à jour : passage à 2 relecteurs
+
+**Fait** : mise à jour complète des livrables d'analyse pour le changement de besoin (décision A9) : CAHIER_DES_CHARGES.md (note « changements depuis la v2 », RG5 v2 « deux relecteurs différents + moyenne + provisoire », RG6 v2 « deux relecteurs distincts parmi les présents », RG9 v2 « RELUE quand les deux ont rendu », RG14/RG15 v2, EF9/EF12/EF15 v2, nouvelles décisions A9 et A10 en section 7, B5 « V3 ajoutée, jamais modifiée »), diagramme D2 (nouvelle entité `AssignationRelecture` 1..2 par exercice, Exercice sans plus de `relecteurId`, Relecture 0..2 avec UNIQUE(exercice_id, relecteur_id), correspondances RG et migrations à jour) et diagramme D4 (la 1re relecture rendue ne fait plus passer l'exercice RELUE : auto-transition EN_ATTENTE avec note provisoire ; RELUE à la 2e). Nouveau diagramme D5 `d5-sequence-relecture.md` : séquence de rendu de relecture à 2 relecteurs avec branches 200 provisoire / 200 définitive (moyenne) / 404 / 400 / 403 / 409, et règle d'identification du relecteur (décision A10, sans auth).
+
+**Bloqué** : aucun blocage significatif. Point d'attention tranché dans A10 : le contrat imposé `POST /api/relectures/{id}` ne transporte pas l'identité du relecteur — sans auth, le backend considère que l'appel émane du relecteur assigné qui n'a pas encore rendu ; resoumission → 409 (RG9 inchangé).
+
+**IA** : m'a rédigé les mises à jour du CDC et des diagrammes D2/D4 et le nouveau D5. J'ai vérifié la cohérence croisée : chaque mention « un seul relecteur » du CDC est soit mise à jour soit explicitement marquée v2 ; D2 correspond désormais à la future V3 (assignation_relecture, UNIQUE(exercice_id, relecteur_id) sur relecture, suppression de relecteur_id sur exercice) ; D4 et D5 décrivent le même flux que A9/A10.
+
+**Commit** : `docs(analyse): mise a jour suite au passage a 2 relecteurs (#43)`
+
+---
+
 ### Ticket #1 — Init backend Spring Boot + frontend React Vite + Docker Compose
 
 **Fait** : création du squelette backend Spring Boot 3.3.5 (Java 17, Maven, wrapper `mvnw` commité) et frontend React 18 + Vite (port 4200). `docker-compose.yml` avec 3 services (`postgres` interne, `backend` sur 8085, `frontend` sur 4200). `application.properties` (port 8085, PostgreSQL, Flyway, `ddl-auto=validate`), `application-dev.properties` (SQL visible), `application-test.properties` (H2 en mémoire). `GlobalExceptionHandler` + `ErrorResponse` au format `{code, message}`. `Dockerfile` multi-stage pour chaque service.
