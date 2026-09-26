@@ -7,19 +7,27 @@ import cm.kfokam48.epreuve.exception.ResourceNotFoundException;
 import cm.kfokam48.epreuve.repository.EtudiantRepository;
 import cm.kfokam48.epreuve.repository.ExerciceRepository;
 import cm.kfokam48.epreuve.repository.RelectureRepository;
+import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 
 /**
- * EF15 — les exercices d'un étudiant, avec note et commentaire s'ils sont relus.
- * RG7 : l'identité du relecteur n'est jamais exposée dans la réponse.
+ * EF15 — les exercices d'un étudiant, avec note et commentaire s'ils ont reçu
+ * au moins une relecture.
+ * v2 (RG5 v2, décision A9) : `note` est la MOYENNE des relectures rendues de
+ * l'exercice ; `noteProvisoire` vaut true tant qu'un seul des deux relecteurs a
+ * rendu (sa note est affichée en attendant), false quand les deux ont rendu,
+ * null tant qu'aucune relecture n'est rendue.
+ * RG7 : l'identité des relecteurs n'est jamais exposée dans la réponse.
  */
 @Service
 public class EtudiantService {
 
     private static final String CODE_ETUDIANT_INCONNU = "ETUDIANT_INCONNU";
+
+    /** RG5 v2 : un exercice possède deux relecteurs. */
+    private static final int NOMBRE_RELECTEURS = 2;
 
     private final EtudiantRepository etudiantRepository;
     private final ExerciceRepository exerciceRepository;
@@ -34,7 +42,8 @@ public class EtudiantService {
     }
 
     /**
-     * Liste les exercices de l'étudiant (note et commentaire null si pas encore relu).
+     * Liste les exercices de l'étudiant (note/commentaire null tant qu'aucune
+     * relecture n'est rendue ; note provisoire si un seul rendu).
      */
     public List<ExerciceEtudiantResponse> listerExercices(Long etudiantId) {
         // L'étudiant doit exister avant de lister
@@ -47,15 +56,28 @@ public class EtudiantService {
                 .collect(Collectors.toList());
     }
 
-    /** Map un exercice vers le DTO, en récupérant note/commentaire si une relecture existe. */
+    /**
+     * Map un exercice vers le DTO avec la note retenue (moyenne des relectures
+     * rendues) et le flag provisoire. RG7 : aucun champ relecteur.
+     */
     private ExerciceEtudiantResponse construireReponse(Exercice exercice) {
-        Optional<Relecture> relecture = relectureRepository.findByExerciceId(exercice.getId());
+        List<Relecture> relecturesRendues = relectureRepository.findByExerciceId(exercice.getId());
 
         Integer note = null;
+        Boolean noteProvisoire = null;
         String commentaire = null;
-        if (relecture.isPresent()) {
-            note = relecture.get().getNote();
-            commentaire = relecture.get().getCommentaire();
+
+        if (!relecturesRendues.isEmpty()) {
+            note = (int) Math.round(relecturesRendues.stream()
+                    .mapToInt(Relecture::getNote)
+                    .average()
+                    .orElse(0.0));
+            noteProvisoire = relecturesRendues.size() < NOMBRE_RELECTEURS;
+            // Commentaire de la première relecture rendue (ordre chronologique)
+            Relecture premiere = relecturesRendues.stream()
+                    .min(Comparator.comparing(Relecture::getRendueAt))
+                    .orElse(null);
+            commentaire = premiere != null ? premiere.getCommentaire() : null;
         }
 
         return new ExerciceEtudiantResponse(
@@ -64,6 +86,7 @@ public class EtudiantService {
                 exercice.getLien(),
                 exercice.getStatut().name(),
                 note,
+                noteProvisoire,
                 commentaire);
     }
 }

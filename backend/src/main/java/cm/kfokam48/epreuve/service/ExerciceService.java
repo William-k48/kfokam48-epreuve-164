@@ -6,6 +6,7 @@ import cm.kfokam48.epreuve.dto.ExerciceRequest;
 import cm.kfokam48.epreuve.dto.ExerciceResponse;
 import cm.kfokam48.epreuve.dto.ReassignationRelecteurRequest;
 import cm.kfokam48.epreuve.dto.RemplacementLienRequest;
+import cm.kfokam48.epreuve.entity.AssignationRelecture;
 import cm.kfokam48.epreuve.entity.Etudiant;
 import cm.kfokam48.epreuve.entity.Exercice;
 import cm.kfokam48.epreuve.entity.Presence;
@@ -18,9 +19,11 @@ import cm.kfokam48.epreuve.exception.RelecteurInvalideException;
 import cm.kfokam48.epreuve.exception.RelectureDejaCommenceeException;
 import cm.kfokam48.epreuve.exception.ResourceNotFoundException;
 import cm.kfokam48.epreuve.exception.SessionNotFoundException;
+import cm.kfokam48.epreuve.repository.AssignationRelectureRepository;
 import cm.kfokam48.epreuve.repository.EtudiantRepository;
 import cm.kfokam48.epreuve.repository.ExerciceRepository;
 import cm.kfokam48.epreuve.repository.PresenceRepository;
+import cm.kfokam48.epreuve.repository.RelectureRepository;
 import cm.kfokam48.epreuve.repository.SessionRepository;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -29,37 +32,49 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * EF7/EF9/EF10 — logique métier du dépôt d'exercice.
- * RG6 : le relecteur est tiré au hasard parmi les présents à la session (hors auteur)
- * au moment du dépôt. EF10 (décision A2) : sans candidat, relecteur_id reste null,
- * l'exercice est créé EN_ATTENTE. Pas de vérification d'expiration ni de clôture (Q12/RG11).
+ * v2 (RG6 v2, décision A9) : DEUX relecteurs distincts sont tirés au hasard
+ * parmi les présents à la session (hors auteur) au moment du dépôt — un seul
+ * si un seul candidat disponible (RG14 v2). Réassignation (EF11/RG15 v2) :
+ * remplace un relecteur n'ayant pas encore rendu, ou complète la 2e assignation.
  */
 @Service
 public class ExerciceService {
 
     private static final String CODE_ETUDIANT_INCONNU = "ETUDIANT_INCONNU";
 
+    /** RG5 v2 : chaque exercice est relu par au plus deux relecteurs. */
+    private static final int NOMBRE_RELECTEURS = 2;
+
     private final ExerciceRepository exerciceRepository;
     private final SessionRepository sessionRepository;
     private final EtudiantRepository etudiantRepository;
     private final PresenceRepository presenceRepository;
+    private final AssignationRelectureRepository assignationRelectureRepository;
+    private final RelectureRepository relectureRepository;
 
     public ExerciceService(ExerciceRepository exerciceRepository,
                            SessionRepository sessionRepository,
                            EtudiantRepository etudiantRepository,
-                           PresenceRepository presenceRepository) {
+                           PresenceRepository presenceRepository,
+                           AssignationRelectureRepository assignationRelectureRepository,
+                           RelectureRepository relectureRepository) {
         this.exerciceRepository = exerciceRepository;
         this.sessionRepository = sessionRepository;
         this.etudiantRepository = etudiantRepository;
         this.presenceRepository = presenceRepository;
+        this.assignationRelectureRepository = assignationRelectureRepository;
+        this.relectureRepository = relectureRepository;
     }
 
     /**
      * EF7 : l'étudiant dépose le lien de son exercice.
      * Ordre des vérifications : session → étudiant → doublon → lien → assignation.
      */
+    @Transactional
     public ExerciceResponse deposerExercice(ExerciceRequest request) {
         // 1. La session (ressource cible) doit exister
         Session session = sessionRepository.findById(request.sessionId())
@@ -79,12 +94,15 @@ public class ExerciceService {
         // 4. Le lien doit être une URL http/https exploitable
         validerLien(request.lien());
 
-        // 5. EF9/RG6 : assignation d'un relecteur au moment du dépôt (peut être null, EF10)
-        Etudiant relecteur = assignerRelecteur(request.sessionId(), request.etudiantId());
+        // 5. EF9/RG6 v2 : assignation de DEUX relecteurs au moment du dépôt (0 à 2, EF10/RG14)
+        List<Etudiant> relecteurs = assignerRelecteurs(request.sessionId(), request.etudiantId());
 
         // 6-7. Création — deposeAt rempli explicitement (Hibernate ignore les DEFAULT SQL)
         Exercice exercice = new Exercice(session, auteur, request.lien(),
-                StatutExercice.EN_ATTENTE, LocalDateTime.now(), relecteur);
+                StatutExercice.EN_ATTENTE, LocalDateTime.now());
+        for (Etudiant relecteur : relecteurs) {
+            exercice.ajouterAssignation(new AssignationRelecture(exercice, relecteur, LocalDateTime.now()));
+        }
         Exercice enregistre = exerciceRepository.save(exercice);
 
         // 8.
@@ -105,29 +123,30 @@ public class ExerciceService {
     }
 
     /**
-     * RG6 : tire au hasard un relecteur parmi les présents à la session, hors auteur.
-     * EF10 (décision A2) : retourne null si aucun candidat disponible.
+     * RG6 v2/A9 : tire au hasard DEUX relecteurs DISTINCTS parmi les présents à la
+     * session, hors auteur. EF10/RG14 : retourne 0, 1 ou 2 candidats selon la
+     * disponibilité (le dépôt n'est jamais bloqué pour autant).
      */
-    private Etudiant assignerRelecteur(Long sessionId, Long auteurId) {
+    private List<Etudiant> assignerRelecteurs(Long sessionId, Long auteurId) {
         List<Presence> presences = presenceRepository.findBySessionId(sessionId);
         List<Long> candidats = presences.stream()
                 .map(presence -> presence.getEtudiant().getId())
                 .filter(id -> !id.equals(auteurId))
+                .distinct()
                 .collect(Collectors.toList());
 
-        if (candidats.isEmpty()) {
-            return null;
-        }
-
         Collections.shuffle(candidats);
-        Long relecteurId = candidats.get(0);
-        return etudiantRepository.findById(relecteurId).orElse(null);
+        return candidats.stream()
+                .limit(NOMBRE_RELECTEURS)
+                .map(id -> etudiantRepository.findById(id).orElse(null))
+                .filter(relecteur -> relecteur != null)
+                .collect(Collectors.toList());
     }
 
     /**
      * EF8 (décision A3) : l'étudiant remplace le lien de son exercice.
-     * RG12 : refus si la relecture a déjà commencé (statut RELUE) → 409.
-     * L'exercice garde son statut EN_ATTENTE et son relecteur (aucune réassignation).
+     * RG12 : refus dès que l'exercice est RELUE (les deux relectures rendues) → 409.
+     * L'exercice garde son statut et ses relecteurs (aucune réassignation).
      * Ordre des vérifications : exercice → statut → lien.
      */
     public ExerciceLienResponse remplacerLien(Long exerciceId, RemplacementLienRequest request) {
@@ -143,7 +162,7 @@ public class ExerciceService {
         // 3. Le nouveau lien doit être une URI http/https exploitable (méthode de l'issue #6)
         validerLien(request.lien());
 
-        // 4-5. Mise à jour du lien seul ; statut et relecteur inchangés
+        // 4-5. Mise à jour du lien seul ; statut et relecteurs inchangés
         exercice.setLien(request.lien());
         Exercice enregistre = exerciceRepository.save(exercice);
 
@@ -155,16 +174,19 @@ public class ExerciceService {
     }
 
     /**
-     * EF11 (décision A2) : le formateur réassigne le relecteur d'un exercice en attente.
-     * Le relecteur ne peut pas être l'auteur. Pas de vérification de présence à la session.
-     * Ordre des vérifications : exercice → statut → relecteur → auteur.
+     * EF11 (décision A2, RG15 v2) : le formateur assigne/réassigne un relecteur
+     * d'un exercice en attente. Deux cas :
+     * - l'exercice a moins de 2 relecteurs → complément (ajout de la 2e assignation) ;
+     * - l'exercice a déjà 2 relecteurs → remplacement du premier qui n'a pas rendu.
+     * Ordre : exercice → statut → relecteur → auteur → limite RG5 v2.
      */
+    @Transactional
     public ExerciceRelecteurResponse reassignerRelecteur(Long exerciceId, ReassignationRelecteurRequest request) {
         // 1. L'exercice visé doit exister
         Exercice exercice = exerciceRepository.findById(exerciceId)
                 .orElseThrow(ExerciceNotFoundException::new);
 
-        // 2. RG12 : pas de réassignation après le début de la relecture
+        // 2. RG12 : pas de réassignation après la fin de la relecture (RELUE)
         if (exercice.getStatut() == StatutExercice.RELUE) {
             throw new RelectureDejaCommenceeException();
         }
@@ -179,14 +201,35 @@ public class ExerciceService {
             throw new RelecteurInvalideException();
         }
 
-        // 5-6. Mise à jour du relecteur seul ; statut inchangé
-        exercice.setRelecteur(relecteur);
-        Exercice enregistre = exerciceRepository.save(exercice);
+        // 5. Les assignations actuelles de l'exercice (0, 1 ou 2)
+        List<AssignationRelecture> assignations = assignationRelectureRepository.findByExerciceId(exerciceId);
+        boolean dejaAssigne = assignations.stream()
+                .anyMatch(a -> a.getRelecteur().getId().equals(relecteur.getId()));
 
-        // 7.
+        // 6. RG5 v2 : si 2 assignations et le relecteur demandé n'en fait pas partie,
+        //    on remplace le premier relecteur qui n'a PAS encore rendu sa relecture
+        //    (RG15 v2 : un relecteur ayant rendu est figé, RG9).
+        if (!dejaAssigne && assignations.size() >= NOMBRE_RELECTEURS) {
+            AssignationRelecture aRemplacer = assignations.stream()
+                    .filter(a -> relectureRepository
+                            .findByExerciceIdAndRelecteurId(exerciceId, a.getRelecteur().getId())
+                            .isEmpty())
+                    .findFirst()
+                    .orElseThrow(RelecteurInvalideException::new);
+            assignationRelectureRepository.delete(aRemplacer);
+        }
+
+        // 7. Ajout de l'assignation (complément ou remplacement) si le relecteur
+        //    n'est pas déjà assigné — l'UNIQUE(exercice_id, relecteur_id) protège aussi
+        if (!dejaAssigne) {
+            assignationRelectureRepository.save(
+                    new AssignationRelecture(exercice, relecteur, LocalDateTime.now()));
+        }
+
+        // 8. Statut inchangé (EN_ATTENTE)
         return new ExerciceRelecteurResponse(
-                enregistre.getId(),
-                enregistre.getStatut().name(),
-                enregistre.getRelecteur().getId());
+                exercice.getId(),
+                exercice.getStatut().name(),
+                relecteur.getId());
     }
 }
