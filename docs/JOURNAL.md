@@ -1,3 +1,17 @@
+### Issue #48 — Commit 9 : documentation du design system
+
+**Fait** : `docs/DESIGN_SYSTEM.md` — documente la palette (jetons CSS + rôles + interdits + contraste AA), la typographie (Inter, échelle imposée), le layout global (schéma ASCII sidebar/header/contenu + responsive), les 5 composants réutilisables et leurs API, les règles formulaires/boutons, le feedback et les micro-interactions (animation unique + `prefers-reduced-motion`), l'accessibilité (clavier, rôles ARIA), et 5 **décisions notables** : thème clair unique (dark mode du template retiré, justification), SVG inline plutôt que `lucide-react`, mention provisoire, RG7, logo placeholder remplaçable au même chemin.
+
+**Pas touché (logique métier)** : documentation seule.
+
+**Bloqué** : aucun.
+
+**IA** : a rédigé la documentation à partir du code livré. Vérifié : chaque jeton documenté correspond à la valeur réelle de `index.css`, chaque composant documenté existe dans `src/components/` avec l'API décrite.
+
+**Commit** : `docs(ui): documente le design system`
+
+---
+
 ### Issue #48 — Commit 8 : tests des composants UI
 
 **Fait** : `src/components/composants.test.jsx` — 12 nouveaux tests Vitest/Testing Library sur les 4 composants réutilisables : `Badge` (variante appliquée, défaut neutre) + `varianteNote` (5 cas de seuil : 16→succes, 10→alerte, 9→erreur, 20→succes, 0→erreur — verrouille la règle de couleur des badges) ; `Card` (titre + aria-labelledby, cas sans titre) ; `EmptyState` (role status, illustration, titre, texte) ; `Toast` (rien sans message, affichage avec role status, disparition à la durée exacte via `vi.useFakeTimers` — 2999 ms rien, 3000 ms fermeture). Total : **33 tests** (21 existants inchangés + 12 nouveaux).
