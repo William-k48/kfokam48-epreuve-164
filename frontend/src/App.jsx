@@ -1,5 +1,6 @@
 import { Link, Route, Routes } from 'react-router-dom'
 import './App.css'
+import AppLayout from './layouts/AppLayout.jsx'
 import EtudiantPage from './pages/EtudiantPage.jsx'
 import FormateurPage from './pages/FormateurPage.jsx'
 import RelecteurPage from './pages/RelecteurPage.jsx'
@@ -27,7 +28,7 @@ const ecrans = [
 
 function Accueil() {
   return (
-    <main className="page">
+    <div className="page">
       <h1>Suivi des exercices</h1>
       <p className="sous-titre">
         Présences, dépôt d&apos;exercices et relectures anonymes, session par session.
@@ -42,17 +43,19 @@ function Accueil() {
           </li>
         ))}
       </ul>
-    </main>
+    </div>
   )
 }
 
 function App() {
   return (
     <Routes>
-      <Route path="/" element={<Accueil />} />
-      <Route path="/formateur" element={<FormateurPage />} />
-      <Route path="/etudiant" element={<EtudiantPage />} />
-      <Route path="/relecteur" element={<RelecteurPage />} />
+      <Route element={<AppLayout />}>
+        <Route path="/" element={<Accueil />} />
+        <Route path="/formateur" element={<FormateurPage />} />
+        <Route path="/etudiant" element={<EtudiantPage />} />
+        <Route path="/relecteur" element={<RelecteurPage />} />
+      </Route>
     </Routes>
   )
 }
