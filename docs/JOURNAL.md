@@ -1,3 +1,15 @@
+### Issue #48 — Vérifications finales
+
+**Fait** : bilan de fin de mission sur l'état final de `feat/48-refonte-ui-ux` (9 commits). **Frontend** : `npm run build` → ✓ OK ; `npx vitest run` → **33/33** (21 tests existants adaptés au markup sans changer leurs vérifications + 12 nouveaux tests de composants) ; `npm run lint` → 0 erreur, 0 warning (22 fichiers). **Backend** (preuve qu'il n'a pas bougé) : `mvnw test` → BUILD SUCCESS, **12/12** (CorsSmokeTemp 4 — résidu de build non présent dans les sources, PrésenceController 2, PrésenceService 3, RelectureService 3) ; aucun fichier `backend/` ni `api/` ni `nginx.conf` ni `client.js`/`useApi.js`/`vite.config.js` modifié (vérifié par l'historique des 9 commits : frontend/, docs/ seulement).
+
+**Vérification fonctionnelle (par inspection du code livré)** : les 3 écrans s'affichent sous l'AppLayout (routes inchangées) ; les appels API partent des mêmes fonctions avec les mêmes payloads (`client.js` intouché, signature `useApi` inchangée) ; les erreurs métier gardent leurs messages mappés et `role="alert"` ; le tableau formateur affiche la moyenne (badges colorés, « — » si null — `formaterMoyenne` inchangé) ; l'écran étudiant affiche `noteProvisoire === true` avec la mention « (provisoire) » ; l'écran relecteur liste les relectures `EN_ATTENTE` retournées par l'API ; proxy Vite/CORS non touchés (`vite.config.js`, `nginx.conf` intacts). Communication backend ↔ frontend intacte par construction.
+
+**Limite connue (signalée)** : l'instabilité des workers Vitest sur ce poste Windows (timeouts intermittents, panne complète passagère observée au commit 7) — préexistante (#34), indépendante de la refonte, disparaît à la relance.
+
+**Commit** : entrée de bilan, aucun commit de code associé.
+
+---
+
 ### Issue #48 — Commit 9 : documentation du design system
 
 **Fait** : `docs/DESIGN_SYSTEM.md` — documente la palette (jetons CSS + rôles + interdits + contraste AA), la typographie (Inter, échelle imposée), le layout global (schéma ASCII sidebar/header/contenu + responsive), les 5 composants réutilisables et leurs API, les règles formulaires/boutons, le feedback et les micro-interactions (animation unique + `prefers-reduced-motion`), l'accessibilité (clavier, rôles ARIA), et 5 **décisions notables** : thème clair unique (dark mode du template retiré, justification), SVG inline plutôt que `lucide-react`, mention provisoire, RG7, logo placeholder remplaçable au même chemin.
