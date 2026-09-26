@@ -103,7 +103,7 @@ function RelecteurPage() {
     loading: etudiantsEnCours,
     error: erreurEtudiants,
   } = useApi(
-    () => (promotionId ? getEtudiants(promotionId) : Promise.resolve(null)),
+    () => (promotionId ? getEtudiants(Number(promotionId)) : Promise.resolve(null)),
     [promotionId],
   )
 
@@ -116,7 +116,8 @@ function RelecteurPage() {
     loading: relecturesEnCours,
     error: erreurRelectures,
   } = useApi(
-    () => (identifie ? getRelecturesEtudiant(etudiantId) : Promise.resolve(null)),
+    () =>
+      identifie ? getRelecturesEtudiant(Number(etudiantId)) : Promise.resolve(null),
     [etudiantId, rafraichir],
   )
 

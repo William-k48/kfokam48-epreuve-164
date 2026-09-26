@@ -212,3 +212,15 @@ feat/13-promotions-etudiants
 **IA** : m'a généré la page et son composant enfant. J'ai vérifié la validation locale de la note (bouton désactivé si note absente, non entière ou hors bornes), que les 3 codes d'erreur sont mappés, et que rien ne révèle l'auteur. `npm run build` → `✓ built in 2.8 s`.
 
 **Commit** : `feat(frontend): ecran relecteur, relectures en attente et rendu de note (Closes #31)`
+
+---
+
+### Issue #34 — Tests frontend (Vitest + Testing Library)
+
+**Fait** : Vitest 5 + @testing-library/react + jest-dom + user-event + jsdom installés en devDependencies (`package.json` + `package-lock.json` committés). Configuration `test` dans `vite.config.js` (jsdom, `globals`, `setupFiles`, `pool: 'threads'` — les workers `forks` ne démarrent pas sur ce poste Windows). Scripts `test` / `test:watch`. 5 fichiers de test, 20 tests : `client.test.js` (verbes, chemins, bodies, format d'erreur `{ code, message, status }`, `ERREUR_RESEAU`), `useApi.test.js` (loading/data/error, changement de deps, démontage), et un fichier par écran (promotions affichées, code de session, moyenne « — », confirmation + erreur 410, RG7 sans relecteur, liste en attente, retrait après rendu, erreurs lisibles). `frontend/README.md` réécrit avec la commande `npm test`.
+
+**Bloqué** : environ 20 min sur le démarrage des workers Vitest sous Windows (`Timeout waiting for worker to respond` en pools `forks` puis `threads`) — résolu par `pool: 'threads'` + relance (cold start), puis 10 min sur deux sélections de `<select>` faites avant le chargement des données (résolu en attendant les options) et des valeurs de select passées en chaîne au lieu de nombre (coercion `Number()` ajoutée dans les pages).
+
+**IA** : m'a généré les 5 fichiers de test, la config Vitest et le README. J'ai corrigé les pages (coercion `Number()`) révélée par les tests, vérifié `npm test` → **20/20 passés** (5 fichiers), `npm run build` → `✓ built in 0.8 s` (les tests ne sont pas dans le bundle de prod), `npm run lint` → 0 erreur, et que le Dockerfile n'est pas modifié.
+
+**Commit** : `feat(frontend): tests vitest et testing library (Closes #34)`

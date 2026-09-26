@@ -38,7 +38,7 @@ function EtudiantPage() {
     loading: etudiantsEnCours,
     error: erreurEtudiants,
   } = useApi(
-    () => (promotionId ? getEtudiants(promotionId) : Promise.resolve(null)),
+    () => (promotionId ? getEtudiants(Number(promotionId)) : Promise.resolve(null)),
     [promotionId],
   )
 
@@ -62,7 +62,8 @@ function EtudiantPage() {
     loading: exercicesEnCours,
     error: erreurExercices,
   } = useApi(
-    () => (identifie ? getExercicesEtudiant(etudiantId) : Promise.resolve(null)),
+    () =>
+      identifie ? getExercicesEtudiant(Number(etudiantId)) : Promise.resolve(null),
     [etudiantId, rafraichirExercices],
   )
 

@@ -23,4 +23,12 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 4200,
   },
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: './src/test/setup.js',
+    // Pool 'threads' : les workers 'forks' ne démarrent pas de manière fiable
+    // sur ce poste Windows (timeout au lancement du worker).
+    pool: 'threads',
+  },
 })
