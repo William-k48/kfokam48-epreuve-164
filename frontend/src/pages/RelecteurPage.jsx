@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import EmptyState from '../components/EmptyState.jsx'
 import {
   getEtudiants,
   getPromotions,
@@ -235,12 +236,12 @@ function RelecteurPage() {
         )}
 
         {identifie && relectures && relectures.length === 0 && (
-          <div className="carte-bloc relectures-vide" role="status">
-            <IllustrationVide />
-            <p className="relectures-vide-titre">Tout est à jour. Reposez-vous !</p>
-            <p className="relectures-vide-texte">
-              Aucune relecture en attente pour le moment.
-            </p>
+          <div className="carte-bloc">
+            <EmptyState
+              illustration={<IllustrationVide />}
+              titre="Tout est à jour. Reposez-vous !"
+              texte="Aucune relecture en attente pour le moment."
+            />
           </div>
         )}
 

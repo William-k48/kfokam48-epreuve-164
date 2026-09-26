@@ -1,3 +1,19 @@
+### Issue #48 — Commit 7 : composants réutilisables (Card, Badge, Toast, EmptyState)
+
+**Fait** : nouveau dossier `src/components/` avec 4 composants **purement visuels** : `Card.jsx` (bloc `.carte-bloc` avec titre optionnel), `Badge.jsx` (pill neutre/succes/alerte/erreur + helper exporté `varianteNote(note)` centralisant les seuils >15/10–15/<10, un seul endroit à modifier), `Toast.jsx` (notification fixe en bas d'écran, `role="status"`, disparition auto après 3 s, minuterie nettoyée au démontage), `EmptyState.jsx` (illustration + titre + texte, réutilise les styles `.relectures-vide`). Refactor : `RelecteurPage` utilise `EmptyState` (même markup résultant), `EtudiantPage` affiche la confirmation de présence via **Toast** (le message inline dupliqué a été retiré — le doublon d'information était une faute d'UX ; le Toast est le « feedback visuel immédiat » demandé). Style `.toast` ajouté à `App.css`.
+
+**Pas touché (logique métier)** : aucun appel API, aucun état métier modifié — `presenceOk` pilote le Toast exactement comme il pilotait le message inline ; les pages restent propriétaires des messages et des seuils (ou passent par `varianteNote` qui porte la même règle).
+
+**Adaptation de test** : aucune nécessaire (le test de présence matche `/Présence marquée, merci !/` qui est le texte du Toast).
+
+**Bloqué** : une panne complète des workers Vitest a eu lieu pendant la vérification (« Timeout waiting for worker to respond » sur les 5 fichiers, 0 test exécuté) — passée à la relance sans aucun changement (symptôme #34). Signalé pour transparence.
+
+**IA** : a créé les 4 composants, branché le Toast et EmptyState. Vérifié : `npm run build` → ✓ built in 618ms, `npx vitest run` → 21/21, `npm run lint` → 0 erreur (21 fichiers).
+
+**Commit** : `feat(ui): ajoute les composants reutilisables (Card, Badge, Toast)`
+
+---
+
 ### Issue #48 — Commit 6 : écran relecteur
 
 **Fait** : `RelecteurPage.jsx` — **état vide repensé** : le message condescendant « Aucune relecture en attente. Bravo ! » est remplacé par le bloc `.relectures-vide` (illustration **tasse de café SVG inline**, titre « Tout est à jour. Reposez-vous ! », sous-texte « Aucune relecture en attente pour le moment », `role="status"`). Chaque relecture en attente est une **carte** `.carte-bloc` (dans une pile `.relectures-liste`) conservant exactement la légende « Exercice #id — ouvrir le lien — l'auteur reste anonyme » (RG7 : l'API n'expose pas l'auteur, **aucun nom inventé** — conformément à l'analyse préalable R2), note (validation locale inchangée : entier 0–20), commentaire, bouton avec icône ✓. Section d'identification dans une carte. Bouton « Rendre la relecture » inchangé (nom conservé — test existant).

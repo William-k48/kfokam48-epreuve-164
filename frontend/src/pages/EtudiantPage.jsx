@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
+import Toast from '../components/Toast.jsx'
 import {
   deposerExercice,
   getEtudiants,
@@ -93,6 +94,8 @@ function EtudiantPage() {
     setPromotionId(event.target.value)
     setEtudiantId('')
   }
+
+  const fermerToast = useCallback(() => setPresenceOk(false), [])
 
   const soumettrePresence = async (event) => {
     event.preventDefault()
@@ -247,11 +250,6 @@ function EtudiantPage() {
           </button>
         </form>
 
-        {presenceOk && (
-          <p className="message succes presence-confirmation" role="status">
-            ✓ Présence marquée, merci !
-          </p>
-        )}
         {erreurPresence && (
           <p className="message erreur" role="alert">
             {messageErreur(erreurPresence, MESSAGES_ERREUR_PRESENCE)}
@@ -363,6 +361,11 @@ function EtudiantPage() {
       <p className="retour-mention">
         Utilisez le menu à gauche pour revenir à l&apos;accueil.
       </p>
+
+      <Toast
+        message={presenceOk ? '✓ Présence marquée, merci !' : null}
+        onFerme={fermerToast}
+      />
     </div>
   )
 }
