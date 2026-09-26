@@ -143,6 +143,15 @@ feat/13-promotions-etudiants
 
 **Commit** : `feat(exercices): implemente PATCH /api/exercices/{id}/relecteur (Closes #8)
 
+### Issue #32 — Couche API dédiée + hook useApi
+
+**Fait** : `frontend/src/api/client.js` — constante `BASE_URL = 'http://localhost:8085'`, fonction privée `call(path, { method, body })` qui sérialise le corps JSON, lit la réponse, puis normalise toute erreur en `{ code, message, status }` (ENF6) avec repli `ERREUR_INCONNUE` et cas du serveur injoignable `ERREUR_RESEAU` ; les 12 fonctions exportées, une par endpoint du contrat (5 imposées + 7 libres). `frontend/src/api/useApi.js` — hook `useApi(fn, deps)` exposant `{ data, loading, error }`, avec drapeau `cancelled` pour ignorer une réponse arrivée après le démontage du composant. Aucun `fetch` en dehors de `client.js`, aucune règle métier dupliquée : la moyenne affichée viendra telle quelle de `GET /api/tableau` (RG17).
+
+**Bloqué** : aucun blocage significatif. Deux points relevés et signalés, non traités ici : (a) le template Vite a installé React 19.2.8 alors que le CDC annonce React 18 (F1) — je conserve la version installée, les hooks utilisés (`useState`, `useEffect`) sont identiques ; (b) le backend ne déclare aucune configuration CORS, alors que le navigateur appellera `http://localhost:8085` depuis `http://localhost:4200` : les appels seront bloqués par le navigateur tant qu'un proxy Vite ou une configuration CORS côté backend n'est pas ajoutée. Point à traiter dans une issue dédiée, car les deux fichiers concernés sont hors périmètre de celle-ci (backend et `vite.config.js` interdits).
+
+**IA** : l'IA a écrit `client.js` et `useApi.js` à partir du contrat `api/contrat.yaml`. J'ai vérifié : les 12 signatures et les noms de champs des corps JSON (`titre`/`promotionId`, `code`/`etudiantId`, `sessionId`/`etudiantId`/`lien`, `note`/`commentaire`, `etudiantId`, `lien`, `relecteurId`) sont alignés un par un sur les DTOs du backend (`SessionRequest`, `PresenceRequest`, `ExerciceRequest`, `RelectureRequest`, `PresenceManuelleRequest`, `RemplacementLienRequest`, `ReassignationRelecteurRequest`) ; le port 8085 est celui de `application.properties` et de `docker-compose.yml`. Vérifié par `npm run lint` (oxlint, 0 avertissement, code de sortie 0) et `npm run build` (`✓ built in 3.31s`, code de sortie 0). Le comportement réseau sera couvert par les tests de l'issue #34.
+
+**Commit** : `feat(frontend): couche API dediee et hook useApi (Closes #32)`
 
 ---
 
