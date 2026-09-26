@@ -1,3 +1,19 @@
+### Issue #48 — Commit 4 : écran formateur
+
+**Fait** : `FormateurPage.jsx` réorganisé en **layout 2 colonnes** (`.formateur-grille` 1fr/2fr, empilé sous 1024 px), chaque section dans une `.carte-bloc` ombrée. Colonne gauche « Ouvrir une session » : bouton renommé **« Lancer la session »** (libellé imposé par la mission) avec icône lecture ; après création, le **code s'affiche en gros** (`.code-session` : mono 28 px, letter-spacing 4 px) avec bouton **« Copier »** (presse-papier `navigator.clipboard`, retour « Copié ! » 2 s, repli silencieux si le presse-papier est indisponible — le code reste affiché), dates en méta 13 px. Colonne droite « Tableau de synthèse » : lignes alternées (fond gris très clair), **badges de couleur sur la moyenne** (BadgeNote : >15 vert succès `#2A9D8F`, 10–15 orange alerte `#F4A261`, <10 rouge `#E63946`, « — » badge neutre si null — le format d'affichage `formaterMoyenne` est **inchangé**), colonne « Actions » avec icône œil **décorative** (title « Détail à venir », aucun handler — pas de logique de détail dans le contrat). Sous-titre d'accroche ajouté.
+
+**Pas touché (logique métier)** : `ouvrirSession`, `getPromotions`, `getTableau`, champs `titre`/`promotionId`, format « — » si moyenne null, erreurs `PROMOTION_INCONNUE` (message identique), `role="alert"/"status"` conservés.
+
+**Adaptation de test (autorisée, texte seul)** : `FormateurPage.test.jsx` cherchait le bouton `name: 'Ouvrir la session'` → renommé `name: 'Lancer la session'`. La vérification (l'ouverture affiche le code généré) est **inchangée**.
+
+**Bloqué** : un échec intermittent supplémentaire de workers Vitest observé sur `EtudiantPage.test.jsx` lors d'un run complet (passe seul 4/4, passe au run suivant) — même cause documentée (pool threads Windows, #34) ; aucun lien avec le layout formateur.
+
+**IA** : a réorganisé la page, ajouté BadgeNote et la copie du code, adapté le libellé du test. Vérifié : `npm run build` → ✓ built in 1.86s, `npx vitest run` → 21/21, `npm run lint` → 0 erreur.
+
+**Commit** : `feat(ui): refait l'ecran formateur`
+
+---
+
 ### Issue #48 — Commit 3 : écran d'accueil
 
 **Fait** : `App.jsx` — accueil en grille de **3 colonnes** (desktop), 1 colonne (mobile, ≤768 px), auto-fit (tablette) : chaque carte contient une **icône colorée par rôle** (formateur = primaire bleu, étudiant = succès vert, relecteur = tertiaire ocre, pastille 56 px), titre `<span class=carte-titre>` (style titre), description 1–2 lignes, et un « bouton » **Accéder** (span stylé `.bouton` avec `pointer-events: none` — c'est la carte entière qui est le lien `Link`, aucun lien imbriqué). Hover : élévation `translateY(-3px)` + `box-shadow` élevée + le pseudo-bouton fonce (par couleur de rôle). Libellés des écrans et routes **inchangés**. Styles ajoutés à `App.css` (`.accueil-*`).

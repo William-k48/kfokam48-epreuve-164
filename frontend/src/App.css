@@ -539,6 +539,63 @@
   background: var(--tertiaire-fonce);
 }
 
+/* ---------- Écran formateur (commit 4) ---------- */
+.formateur-grille {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 24px;
+  align-items: start;
+}
+
+.formateur-grille .section {
+  margin: 0;
+}
+
+.session-creee {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.bouton-copier {
+  padding: 6px 14px;
+  font-size: 14px;
+}
+
+.session-dates {
+  font-size: 13px;
+  color: var(--texte-metadonnee);
+}
+
+.tableau-actions {
+  text-align: center;
+  width: 48px;
+}
+
+.tableau-oeil {
+  display: inline-flex;
+  color: var(--texte-metadonnee);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 1024px) {
+  .formateur-grille {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* ---------- Divers ---------- */
 .retour {
   display: inline-block;

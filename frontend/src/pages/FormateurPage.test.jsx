@@ -54,7 +54,7 @@ describe('FormateurPage', () => {
     )
     const selectPromotion = (await screen.findAllByLabelText('Promotion'))[0]
     await user.selectOptions(selectPromotion, '1')
-    await user.click(screen.getByRole('button', { name: 'Ouvrir la session' }))
+    await user.click(screen.getByRole('button', { name: 'Lancer la session' }))
 
     expect(await screen.findByText('ABC123')).toBeInTheDocument()
     expect(ouvrirSession).toHaveBeenCalledWith('TP 4 — Design patterns', 1)
