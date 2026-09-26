@@ -1,3 +1,15 @@
+### Ticket #42 — Bug de concurrence sur `POST /api/presences`
+
+**Fait** : diagnostic confirmé — `PresenceService.marquerPresence` faisait du check-then-insert sans `@Transactional` ni gestion de la violation de contrainte `uq_presence_session_etudiant` : deux étudiants saisissant le code quasi simultanément passaient tous deux le test de doublon, la seconde INSERT échouait en base et remontait en `500 ERREUR_INATTENDUE` au lieu du `409 DEJA_PRESENT` du contrat. Correctif minimal et ciblé : `@Transactional` sur `marquerPresence`, `presenceRepository.flush()` après le save pour faire surgir la violation de contrainte dans la transaction, capture de `DataIntegrityViolationException` → nouvelle exception métier `ConflitConcurrencePresenceException` (409 `DEJA_PRESENT`, même code/message que RG2), couverte par le `GlobalExceptionHandler` existant (aucune modification du handler, interdit). Test unitaire ajouté (`violationContrainteUniqueConcurrenteLevee409DejaPresent`) : save levant `DataIntegrityViolationException` → exception 409, compteur de tentatives non réinitialisé. Le premier étudiant reçoit 201, le second 409 : la liste du formateur est complète, plus aucune présence perdue.
+
+**Bloqué** : environ 15 min de débogage — des fichiers corrompus ont été générés par erreur pendant l'édition (`Presences.java`, dossier `src/main/json`, un fichier au nom tronqué) ; nettoyés avant tout commit, aucun n'a été commité. Aucun autre blocage.
+
+**IA** : l'IA a proposé le correctif (transaction + flush + traduction d'exception) et écrit le test. J'ai vérifié : ordre des vérifications inchangé (Q4), doublon « classique » toujours 409 sans incrément du compteur, comportement de `ajouterPresenceManuelle` inchangé, code/message d'erreur identiques au RG2, `mvnw compile` → BUILD SUCCESS, `mvnw test` → 6/6.
+
+**Commit** : `fix(42): presences concurrentes, 409 au lieu de 500 (Closes #42)`
+
+---
+
 ### Ticket #1 — Init backend Spring Boot + frontend React Vite + Docker Compose
 
 **Fait** : création du squelette backend Spring Boot 3.3.5 (Java 17, Maven, wrapper `mvnw` commité) et frontend React 18 + Vite (port 4200). `docker-compose.yml` avec 3 services (`postgres` interne, `backend` sur 8085, `frontend` sur 4200). `application.properties` (port 8085, PostgreSQL, Flyway, `ddl-auto=validate`), `application-dev.properties` (SQL visible), `application-test.properties` (H2 en mémoire). `GlobalExceptionHandler` + `ErrorResponse` au format `{code, message}`. `Dockerfile` multi-stage pour chaque service.
