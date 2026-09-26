@@ -1,119 +1,154 @@
+/* ============================================================
+   Design system KFOKAM 48 — variables et base typographique
+   Palette issue de l'identité visuelle (voir docs/DESIGN_SYSTEM.md) :
+   primaire bleu #0077B6, secondaire corail #E63946, tertiaire ocre #D4A373.
+   Le violet du template Vite (#aa3bff) est supprimé partout.
+   ============================================================ */
+
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+  /* Couleurs de marque */
+  --primaire: #0077b6;
+  --primaire-fonce: #005f8e;
+  --primaire-clair: rgba(0, 119, 182, 0.1);
+  --primaire-bordure: rgba(0, 119, 182, 0.45);
 
-  --succes: #15803d;
-  --succes-bg: rgba(22, 163, 74, 0.1);
-  --succes-border: rgba(22, 163, 74, 0.35);
-  --erreur: #b91c1c;
-  --erreur-bg: rgba(220, 38, 38, 0.08);
-  --erreur-border: rgba(220, 38, 38, 0.35);
+  --secondaire: #e63946;
+  --secondaire-fonce: #c1121f;
+  --secondaire-clair: rgba(230, 57, 70, 0.08);
+  --secondaire-bordure: rgba(230, 57, 70, 0.35);
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
+  --tertiaire: #d4a373;
+  --tertiaire-fonce: #8a5a2b;
+  --tertiaire-clair: rgba(212, 163, 115, 0.16);
+  --tertiaire-bordure: rgba(212, 163, 115, 0.5);
 
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
+  --succes: #2a9d8f;
+  --succes-fonce: #1f776d;
+  --succes-clair: rgba(42, 157, 143, 0.12);
+  --succes-bordure: rgba(42, 157, 143, 0.4);
+
+  --alerte: #f4a261;
+  --alerte-fonce: #9a5b21;
+  --alerte-clair: rgba(244, 162, 97, 0.14);
+  --alerte-bordure: rgba(244, 162, 97, 0.5);
+
+  /* Neutres (jamais de noir pur, jamais de gris clair sur blanc) */
+  --fond: #f8f9fa;
+  --fond-carte: #ffffff;
+  --texte: #212529;
+  --texte-secondaire: #495057;
+  --texte-metadonnee: #6c757d;
+  --bordure: #dee2e6;
+  --bordure-forte: #adb5bd;
+
+  /* Ombres et rayons */
+  --ombre-carte: 0 1px 2px rgba(33, 37, 41, 0.06), 0 2px 8px rgba(33, 37, 41, 0.06);
+  --ombre-elevee: 0 4px 10px rgba(33, 37, 41, 0.1), 0 10px 24px rgba(33, 37, 41, 0.12);
+  --ombre-focus: 0 0 0 3px rgba(0, 119, 182, 0.25);
+  --rayon: 10px;
+  --rayon-grand: 14px;
+
+  /* Typographie */
+  --police: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --mono: ui-monospace, 'Cascadia Code', Consolas, monospace;
+
+  /* Dimensions du layout */
+  --sidebar-largeur: 250px;
+  --header-hauteur: 64px;
+
+  /* Alias de compatibilité avec les classes existantes */
+  --accent: var(--primaire);
+  --accent-bg: var(--primaire-clair);
+  --accent-border: var(--primaire-bordure);
+  --text: var(--texte);
+  --text-h: var(--texte);
+  --bg: var(--fond-carte);
+  --border: var(--bordure);
+  --shadow: var(--ombre-carte);
+  --succes-bg: var(--succes-clair);
+  --succes-border: var(--succes-bordure);
+  --erreur: var(--secondaire-fonce);
+  --erreur-bg: var(--secondaire-clair);
+  --erreur-border: var(--secondaire-bordure);
+}
+
+/* Base — thème clair unique (identité KFOKAM), plus de prefers-color-scheme :
+   l'app est un outil professionnel à identité de marque fixe. */
+html {
+  font-family: var(--police);
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--texte);
+  background: var(--fond);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --succes: #4ade80;
-    --succes-bg: rgba(22, 163, 74, 0.15);
-    --succes-border: rgba(74, 222, 128, 0.4);
-    --erreur: #f87171;
-    --erreur-bg: rgba(220, 38, 38, 0.15);
-    --erreur-border: rgba(248, 113, 113, 0.4);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
-
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
 }
 
 body {
   margin: 0;
+  color: var(--texte);
+  background: var(--fond);
 }
 
 #root {
   min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
 }
 
-h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
+/* Hiérarchie typographique imposée par la mission */
+h1, h2, h3, h4 {
+  color: var(--texte);
+  margin: 0;
+  text-wrap: balance;
 }
 
 h1 {
-  font-size: 36px;
-  letter-spacing: -1px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 28px;
-  }
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.5px;
 }
+
 h2 {
   font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
+  font-weight: 600;
+  line-height: 1.25;
 }
+
+h3 {
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
 p {
   margin: 0;
   max-width: 60ch;
 }
 
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
+a {
+  color: var(--primaire);
 }
 
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
+a:hover {
+  color: var(--primaire-fonce);
+}
+
+/* Accessibilité : focus visible partout, uniforme */
+:focus-visible {
+  outline: 2px solid var(--primaire);
+  outline-offset: 2px;
+}
+
+/* Micro-interactions : respect de prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

@@ -1,3 +1,46 @@
+### Issue #48 — Commit 1 : design system (variables, typographie, couleurs)
+
+**Fait** : `index.css` réécrit entièrement : palette de marque (primaire `#0077B6`/`#005F8E`, secondaire corail `#E63946`, tertiaire ocre `#D4A373`, succès `#2A9D8F`, alerte `#F4A261`, neutres `#F8F9FA/#212529/#6C757D/#DEE2E6` — jamais de noir pur, jamais de gris clair sur blanc), échelle typographique imposée (h1 32/700, h2 24/600, h3 18/600, corps 16/400 lh 1.6, labels 14/600, méta 13), variables du layout (`--sidebar-largeur: 250px`, `--header-hauteur: 64px`), ombres/rayons, `:focus-visible` uniforme, bloc `prefers-reduced-motion`. **Le violet `#aa3bff` du template Vite est supprimé partout** (plus de `prefers-color-scheme: dark` : thème clair de marque unique, décision documentée). Alias de compatibilité (`--accent`, `--text`, `--bg`, `--border`, `--shadow`…) pointant vers les nouvelles variables pour ne pas casser les classes existantes avant leur refonte. `App.css` refondu : base commune (layout flex, cartes, formulaires avec focus primaire + ombre, boutons avec états hover/active/focus-visible/disabled, messages, tableaux, badges, animation `apparait` 0.2s). `index.html` : police **Inter** via Google Fonts (preconnect + display=swap), meta description, titre « KFOKAM 48 — Suivi des exercices ». Logo : `src/assets/logo-kfokam48.png` créé (480×120 PNG placeholder généré par script — le fichier officiel du client n'étant pas disponible comme binaire dans cette session, il suffira de déposer l'image officielle au même chemin, le composant Sidebar le chargera tel quel).
+
+**Pas touché (logique métier)** : aucun JSX, aucun appel API, aucune route, aucun test — les alias CSS garantissent que l'UI actuelle reste visuellement correcte pendant la transition.
+
+**Bloqué** : environ 10 min — le script de génération du logo a été écrit au mauvais chemin (racine puis `frontend/` au lieu du projet) à cause du répertoire de travail du client ; corrigé, script exécuté puis supprimé.
+
+**IA** : a rédigé le design system et la feuille de styles. Vérifié : `npm run build` → ✓ built in 2.05s, `npm test` → 21/21, `npm run lint` → 0 erreur, 0 warning.
+
+**Commit** : `feat(ui): ajoute le design system (variables, typographie, couleurs)`
+
+---
+
+## Analyse préalable — Refonte UI/UX (issue #48, ÉTAPE 0)
+
+**Fait** : exploration complète du frontend avant toute modification : `App.jsx` (accueil 3 cartes + `<Routes>` 4 routes), `main.jsx` (`BrowserRouter`), 3 pages (`FormateurPage` : ouverture session + tableau ; `EtudiantPage` : identification 2 selects + présence + dépôt + notes ; `RelecteurPage` : identification + liste + formulaire par relecture), couche API (`client.js` 12 fonctions, `useApi` hook), styles (`index.css` variables dont accent **violet `#aa3bff` à supprimer**, `App.css` ~340 lignes classes `.page/.section/.formulaire/.champ/.bouton/.message/.tableau/.carte`), tests (4 fichiers, 21 tests Testing Library qui ciblent **labels, textes et rôles, pas le markup CSS**), `index.html` (lang=fr, titre), `vite.config.js` (proxy /api → 8085, config vitest pool threads), `package.json` (react 19.2.8 — CDC annonce 18, écart déjà signalé à l'issue #32 ; aucune lib UI/icônes installée).
+
+**Réponse à la question imposée — « Est-il possible de refaire l'UI/UX sans casser la logique existante ? Quels sont les risques ? Quels fichiers modifier, lesquels ne pas toucher ? »**
+
+**OUI, c'est possible avec un risque faible et maîtrisé**, pour trois raisons structurelles :
+1. **La logique est déjà isolée** : aucun `fetch` hors de `client.js`, aucune règle métier dans les pages (RG17), les pages ne font qu'appeler les fonctions API et afficher `{ data, loading, error }` du hook `useApi`. Réécrire le JSX des pages ne touche pas cette mécanique.
+2. **Les tests sont robustes au changement de markup** : ils interrogent le DOM accessible (labels `getByLabelText`, textes `findByText`, rôles), pas les classes CSS. Je peux donc changer le layout, les classes et les composants tant que je conserve les libellés, labels et rôles — seuls 2 tests besoin d'adaptation prévisible (markup des cartes de notes → `getByText('12')` et structure des lignes exercice).
+3. **Le layout demandé (Sidebar/Header) est purement additif** : un `AppLayout` qui enveloppe `<Routes>` dans `App.jsx` ne modifie ni les routes, ni les appels, ni les états.
+
+**Risques identifiés et parades** :
+- **R1 — Tests qui cassent** (le plus probable) : l'écran étudiant devient un stepper et ses sections se masquent/affichent conditionnellement → des tests qui cherchent un champ présent par défaut peuvent échouer. Parade : conserver tous les textes/labels/rôles actuels, ne masquer l'étape 1 qu'après sélection (comportement demandé), adapter les tests **sans changer ce qu'ils vérifient** (ce qui est permis).
+- **R2 — RG7 (anonymat)** : le cahier demande d'afficher « le nom de l'étudiant » sur les cartes du relecteur — **l'API ne l'expose pas** (volontaire, RG7). Je ne l'invente pas : les cartes resteront « Exercice #id » avec lien, comme aujourd'hui. C'est déjà conforme, je le signale.
+- **R3 — Logo non fourni** : le fichier `frontend/src/assets/logo-kfokam48.png` n'existe pas encore dans le dépôt ; vous le fournissez après cette analyse. Je coderai le layout avec un emplacement réservé (alt correct, hauteur 40 px) et je brancherai l'image à réception — ou j'utiliserai l'image fournie immédiatement si elle est là avant le commit 2.
+- **R4 — React 19 vs 18** : le CDC impose React 18, le projet tourne en 19.2.8 (écart connu, signalé à l'issue #32, hooks identiques). Je n'y touche pas (changement de version = risque logique, hors périmètre visuel).
+- **R5 — Copy du relecteur** : « Aucune relecture en attente. Bravo ! » → « Tout est à jour. Reposez-vous ! » : changement de texte **vérifié par un test** (`findByText('Aucune relecture en attente. Bravo !')`) → adaptation du test prévue au commit 6/8 (texte seul, pas la vérification).
+- **R6 — Icônes** : aucune lib d'icônes installée. Deux options : SVG inline (zéro dépendance, style maîtrisé) ou `lucide-react` (justification demandée dans la mission). **Je recommande les SVG inline** : aucune modification de `package.json`, aucun risque supply-chain,contrôle total du rendu — je prendrai cette voie sauf contre-ordre.
+
+**Fichiers à modifier** : `index.css` (variables design system), `App.css` (refonte complète), `index.html` (police + titre), `App.jsx` (accueil + enveloppe layout), `main.jsx` (seulement si besoin d'y placer le layout), les 3 pages (JSX visuel uniquement), nouveau `src/components/` (Sidebar, Header, Card, Badge, Toast…), nouveau `src/layouts/AppLayout.jsx`, nouveau `src/assets/logo-kfokam48.png` (à réception), les 4 fichiers de test (adaptation markup seulement), nouveau `docs/DESIGN_SYSTEM.md`, entrées `docs/JOURNAL.md`.
+
+**Fichiers intouchables (confirmé)** : `src/api/client.js` et `src/api/useApi.js` (interdits), `vite.config.js` (interdit — la config vitest existante suffit), `nginx.conf` (interdit), tout `backend/` (interdit), `package.json` (sauf dépendance UI justifiée — aucune ne l'est avec les SVG inline).
+
+**Stratégie** : branche `feat/48-refonte-ui-ux` créée depuis `feat/43-deux-relecteurs` (pour partir de l'état réel livré avec noteProvisoire — à valider : si vous préférez partir de `main`, dites-le, le coût est nul à ce stade). Commits atomiques dans l'ordre imposé (design system → layout → accueil → formateur → étudiant → relecteur → composants réutilisables → tests → docs), vérifications build+tests+lint après chaque commit, backend vérifié (compile+test) en début et fin de mission pour prouver qu'il n'a pas bougé.
+
+**En attente de** : feu vert + logo KFOKAM 48. Aucune ligne de code UI écrite à ce stade.
+
+---
+
 ### Issue #47 — Affichage de la note provisoire (frontend)
 
 **Fait** : écran étudiant, section « Mes exercices et notes » : quand `noteProvisoire` vaut `true` (un seul des deux relecteurs a rendu — RG5 v2, contrat v1.1), la note est suivie de la mention italique « (provisoire) » (style `.note-provisoire` dans `App.css`) ; `noteProvisoire` à `false` (deux relectures rendues, note définitive) ou `null` (aucune relecture rendue, note « — ») n'affiche aucune mention. Aucune logique métier côté front (RG17) : le flag vient tel quel de `GET /api/etudiants/{id}/exercices`, la moyenne est celle calculée par l'API. `client.js` inchangé (les signatures n'ont pas changé). Test Vitest ajouté : note 12 + `noteProvisoire: true` → « 12 » + « provisoire » affichés, exercice sans relecture → « — ».

@@ -1,22 +1,72 @@
+/* ============================================================
+   KFOKAM 48 — styles de l'application
+   Commit 1 (#48) : base commune. Les composants de layout
+   (sidebar, header) et les écrans s'ajoutent aux commits suivants.
+   ============================================================ */
+
+/* ---------- Layout global (le JSX arrive au commit 2) ---------- */
+.layout {
+  display: flex;
+  min-height: 100svh;
+}
+
+.layout-principal {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.contenu {
+  flex: 1;
+  padding: 32px;
+  background: var(--fond);
+}
+
+/* ---------- Page / sections ---------- */
 .page {
   width: 100%;
-  max-width: 960px;
+  max-width: 1100px;
   margin: 0 auto;
-  padding: 48px 24px 64px;
+  padding: 0;
 }
 
 .sous-titre {
-  margin: 8px 0 40px;
-  line-height: 1.5;
+  margin: 8px 0 32px;
+  color: var(--texte-secondaire);
+  line-height: 1.6;
 }
 
+.section {
+  margin: 0 0 32px;
+}
+
+.section h2 {
+  margin-bottom: 16px;
+}
+
+/* ---------- Cartes ---------- */
+.carte-bloc {
+  background: var(--fond-carte);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-grand);
+  box-shadow: var(--ombre-carte);
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.carte-bloc h2 {
+  margin-bottom: 16px;
+}
+
+/* Cartes cliquables de l'accueil */
 .cartes {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 16px;
+  gap: 20px;
 }
 
 .carte {
@@ -26,55 +76,37 @@
   height: 100%;
   box-sizing: border-box;
   padding: 24px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-grand);
+  background: var(--fond-carte);
   color: inherit;
   text-decoration: none;
-  transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+  transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .carte:hover {
-  border-color: var(--accent);
-  box-shadow: var(--shadow);
-  transform: translateY(-2px);
+  border-color: var(--primaire);
+  box-shadow: var(--ombre-elevee);
+  transform: translateY(-3px);
 }
 
-.carte:focus-visible,
-.retour:focus-visible {
-  outline: 2px solid var(--accent);
+.carte:focus-visible {
+  outline: 2px solid var(--primaire);
   outline-offset: 2px;
 }
 
 .carte-titre {
   font-size: 20px;
   font-weight: 600;
-  color: var(--text-h);
+  color: var(--texte);
 }
 
 .carte-description {
-  line-height: 1.5;
-  color: var(--text);
+  line-height: 1.6;
+  color: var(--texte-secondaire);
 }
 
-.retour {
-  display: inline-block;
-  margin-top: 24px;
-  color: var(--accent);
-  text-decoration: none;
-}
-
-.retour:hover {
-  text-decoration: underline;
-}
-
-.section {
-  margin-top: 32px;
-}
-
-.section h2 {
-  margin-bottom: 16px;
-}
-
+/* ---------- Formulaires ---------- */
 .formulaire {
   display: flex;
   flex-direction: column;
@@ -89,41 +121,74 @@
 }
 
 .champ label {
+  font-size: 14px;
   font-weight: 600;
-  color: var(--text-h);
+  color: var(--texte);
 }
 
 .champ input,
-.champ select {
+.champ select,
+.champ textarea {
   padding: 10px 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon);
   font: inherit;
-  color: var(--text-h);
-  background: var(--bg);
+  color: var(--texte);
+  background: var(--fond-carte);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .champ input:focus-visible,
-.champ select:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 1px;
-  border-color: var(--accent);
+.champ select:focus-visible,
+.champ textarea:focus-visible {
+  outline: none;
+  border-color: var(--primaire);
+  box-shadow: var(--ombre-focus);
 }
 
+.champ input:disabled,
+.champ select:disabled,
+.champ textarea:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.champ textarea {
+  resize: vertical;
+}
+
+.champ-note input {
+  max-width: 120px;
+}
+
+/* ---------- Boutons ---------- */
 .bouton {
   align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   padding: 10px 20px;
   border: none;
-  border-radius: 8px;
-  background: var(--accent);
-  color: #fff;
+  border-radius: var(--rayon);
+  background: var(--primaire);
+  color: #ffffff;
   font: inherit;
   font-weight: 600;
   cursor: pointer;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
 }
 
 .bouton:hover:enabled {
-  filter: brightness(1.1);
+  background: var(--primaire-fonce);
+}
+
+.bouton:active:enabled {
+  transform: translateY(1px);
+}
+
+.bouton:focus-visible {
+  outline: none;
+  box-shadow: var(--ombre-focus);
 }
 
 .bouton:disabled {
@@ -131,60 +196,54 @@
   cursor: not-allowed;
 }
 
+.bouton.secondaire {
+  background: var(--fond-carte);
+  color: var(--primaire);
+  border: 1px solid var(--primaire);
+}
+
+.bouton.secondaire:hover:enabled {
+  background: var(--primaire-clair);
+}
+
+/* ---------- Messages (erreurs / succès) ---------- */
 .message {
   margin-top: 16px;
   padding: 12px 16px;
-  border-radius: 8px;
-  line-height: 1.5;
+  border-radius: var(--rayon);
+  line-height: 1.6;
 }
 
 .message.erreur {
-  color: var(--erreur);
-  background: var(--erreur-bg);
-  border: 1px solid var(--erreur-border);
+  color: var(--secondaire-fonce);
+  background: var(--secondaire-clair);
+  border: 1px solid var(--secondaire-bordure);
 }
 
 .message.succes {
-  color: var(--succes);
-  background: var(--succes-bg);
-  border: 1px solid var(--succes-border);
+  color: var(--succes-fonce);
+  background: var(--succes-clair);
+  border: 1px solid var(--succes-bordure);
 }
 
-.code-session {
-  font-size: 20px;
+/* Animations d'apparition (désactivées via prefers-reduced-motion, voir index.css) */
+@keyframes apparait {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
-.formulaire-relecture {
-  margin: 16px 0;
-  padding: 16px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
+.message,
+.carte-bloc {
+  animation: apparait 0.2s ease-out;
 }
 
-.legende {
-  margin-bottom: 12px;
-}
-
-.champ-note input {
-  max-width: 120px;
-}
-
-.champ textarea {
-  padding: 10px 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  font: inherit;
-  color: var(--text-h);
-  background: var(--bg);
-  resize: vertical;
-}
-
-.champ textarea:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 1px;
-  border-color: var(--accent);
-}
-
+/* ---------- Tableaux ---------- */
 .champ-tableau {
   max-width: 480px;
   margin-bottom: 16px;
@@ -192,6 +251,9 @@
 
 .tableau-wrapper {
   overflow-x: auto;
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon);
+  background: var(--fond-carte);
 }
 
 .tableau {
@@ -202,23 +264,23 @@
 
 .tableau th,
 .tableau td {
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--border);
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--bordure);
   text-align: left;
 }
 
-.tableau th {
-  color: var(--text-h);
+.tableau thead th {
+  color: var(--texte);
   font-weight: 600;
+  background: var(--fond);
 }
 
 .tableau tbody tr:nth-child(even) {
-  background: var(--accent-bg);
+  background: var(--fond);
 }
 
-.tableau .note-provisoire {
-  font-style: italic;
-  opacity: 0.75;
+.tableau tbody tr:last-child td {
+  border-bottom: none;
 }
 
 .tableau .nombre {
@@ -226,12 +288,79 @@
   font-variant-numeric: tabular-nums;
 }
 
-@media (max-width: 480px) {
-  .page {
-    padding: 32px 16px 48px;
+.tableau .note-provisoire {
+  font-style: italic;
+  opacity: 0.75;
+}
+
+/* ---------- Badges (statuts, notes) ---------- */
+.badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+
+.badge.neutre {
+  color: var(--texte-secondaire);
+  background: var(--fond);
+  border: 1px solid var(--bordure);
+}
+
+.badge.succes {
+  color: var(--succes-fonce);
+  background: var(--succes-clair);
+  border: 1px solid var(--succes-bordure);
+}
+
+.badge.alerte {
+  color: var(--alerte-fonce);
+  background: var(--alerte-clair);
+  border: 1px solid var(--alerte-bordure);
+}
+
+.badge.erreur {
+  color: var(--secondaire-fonce);
+  background: var(--secondaire-clair);
+  border: 1px solid var(--secondaire-bordure);
+}
+
+/* ---------- Divers ---------- */
+.retour {
+  display: inline-block;
+  margin-top: 24px;
+  color: var(--primaire);
+  text-decoration: none;
+}
+
+.retour:hover {
+  text-decoration: underline;
+}
+
+.code-session {
+  font-family: var(--mono);
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 4px;
+  color: var(--texte);
+}
+
+.legende {
+  margin-bottom: 12px;
+  color: var(--texte-secondaire);
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 768px) {
+  .contenu {
+    padding: 16px;
   }
 
   .bouton {
     align-self: stretch;
+    justify-content: center;
   }
 }
