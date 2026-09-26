@@ -216,6 +216,11 @@
   background: var(--accent-bg);
 }
 
+.tableau .note-provisoire {
+  font-style: italic;
+  opacity: 0.75;
+}
+
 .tableau .nombre {
   text-align: right;
   font-variant-numeric: tabular-nums;

@@ -290,7 +290,12 @@ function EtudiantPage() {
                       </a>
                     </td>
                     <td>{exercice.statut}</td>
-                    <td className="nombre">{exercice.note ?? '—'}</td>
+                    <td className="nombre">
+                      {exercice.note ?? '—'}
+                      {exercice.noteProvisoire === true && (
+                        <span className="note-provisoire"> (provisoire)</span>
+                      )}
+                    </td>
                     <td>{exercice.commentaire ?? '—'}</td>
                   </tr>
                 ))}

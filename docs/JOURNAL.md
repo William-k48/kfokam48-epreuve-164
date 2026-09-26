@@ -1,3 +1,15 @@
+### Issue #47 — Affichage de la note provisoire (frontend)
+
+**Fait** : écran étudiant, section « Mes exercices et notes » : quand `noteProvisoire` vaut `true` (un seul des deux relecteurs a rendu — RG5 v2, contrat v1.1), la note est suivie de la mention italique « (provisoire) » (style `.note-provisoire` dans `App.css`) ; `noteProvisoire` à `false` (deux relectures rendues, note définitive) ou `null` (aucune relecture rendue, note « — ») n'affiche aucune mention. Aucune logique métier côté front (RG17) : le flag vient tel quel de `GET /api/etudiants/{id}/exercices`, la moyenne est celle calculée par l'API. `client.js` inchangé (les signatures n'ont pas changé). Test Vitest ajouté : note 12 + `noteProvisoire: true` → « 12 » + « provisoire » affichés, exercice sans relecture → « — ».
+
+**Bloqué** : aucun blocage significatif. Point de vigilance respecté : la mention ne s'affiche QUE sur `noteProvisoire === true` strict — un exercice sans note (`noteProvisoire: null`) ne doit pas être marqué provisoire.
+
+**IA** : m'a modifié la page, le style et le test. J'ai vérifié que la mention apparaît/disparaît selon les 3 valeurs du flag, que le RG7 reste respecté (aucune mention de relecteur), et `npm run build` → OK, `npm test` → 21/21, `npm run lint` → 0 erreur.
+
+**Commit** : `feat(frontend): affiche la note provisoire (#47)`
+
+---
+
 ### Issue #46 — Deux relecteurs et note moyenne (services backend)
 
 **Fait** : adaptation des services à RG5 v2/décision A9 : `ExerciceService.deposerExercice` (désormais `@Transactional`) assigne DEUX relecteurs DISTINCTS tirés au hasard parmi les présents hors auteur (`Collections.shuffle` + `limit(2)`, 1 seul si un seul candidat — RG14 v2) et construit les `AssignationRelecture` via `exercice.ajouterAssignation` ; `reassignerRelecteur` (RG15 v2) complète la 2ᵉ assignation si l'exercice en a moins de 2, ou remplace le premier relecteur qui n'a PAS encore rendu (un relecteur ayant rendu est figé, RG9) ; `RelectureService.rendreRelecture` implémente la décision A10 (sans auth, l'appel émane de l'assigné qui n'a pas encore rendu) : 1ʳᵉ relecture rendue → l'exercice RESTE `EN_ATTENTE` (note provisoire), 2ᵉ → passage `RELUE`, les deux rendues → `409 RELECTURE_DEJA_RENDUE` ; `EtudiantService` calcule la note retenue (moyenne des relectures rendues, arrondie à l'entier le plus proche) et expose le nouveau champ `noteProvisoire` (true/false/null) dans `ExerciceEtudiantResponse` (RG7 inchangé : aucun champ relecteur) ; `TableauService.calculerMoyenne` calcule désormais la moyenne sur les notes RETENUES exercice par exercice (moyenne des moyennes, notes provisoires incluses conformément au contrat v1.1) et `relecturesEnAttente` compte les exercices où l'étudiant est assigné sans avoir rendu (via `AssignationRelectureRepository`) ; `RelectureEnAttenteService` liste les exercices assignés à l'étudiant où il n'a pas encore rendu. Test unitaire `RelectureServiceTest` (3 tests) : 1ʳᵉ relecture → statut `EN_ATTENTE` sans save exercice, 2ᵉ → `RELUE` + save, double rendu → `RelectureDejaRendueException`.
