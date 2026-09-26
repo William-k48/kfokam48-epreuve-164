@@ -1,3 +1,19 @@
+### Issue #48 — Commit 6 : écran relecteur
+
+**Fait** : `RelecteurPage.jsx` — **état vide repensé** : le message condescendant « Aucune relecture en attente. Bravo ! » est remplacé par le bloc `.relectures-vide` (illustration **tasse de café SVG inline**, titre « Tout est à jour. Reposez-vous ! », sous-texte « Aucune relecture en attente pour le moment », `role="status"`). Chaque relecture en attente est une **carte** `.carte-bloc` (dans une pile `.relectures-liste`) conservant exactement la légende « Exercice #id — ouvrir le lien — l'auteur reste anonyme » (RG7 : l'API n'expose pas l'auteur, **aucun nom inventé** — conformément à l'analyse préalable R2), note (validation locale inchangée : entier 0–20), commentaire, bouton avec icône ✓. Section d'identification dans une carte. Bouton « Rendre la relecture » inchangé (nom conservé — test existant).
+
+**Pas touché (logique métier)** : `getRelecturesEtudiant`, `rendreRelecture`, 3 codes d'erreur mappés à l'identique, validation de note, `role="alert"/"status"`, refresh après rendu, RG7.
+
+**Adaptation de test (autorisée, texte seul)** : `RelecteurPage.test.jsx` — `findByText('Aucune relecture en attente. Bravo !')` → `findByText('Tout est à jour. Reposez-vous !')`. La vérification (l'exercice quitte la liste après rendu) est **inchangée**.
+
+**Bloqué** : aucun blocage significatif (les timeouts workers intermittents restent présents mais le run est passé du premier coup après l'adaptation).
+
+**IA** : a refondu la page et l'état vide, adapté le texte du test. Vérifié : `npm run build` → ✓ built in 1.34s, `npx vitest run` → 21/21, `npm run lint` → 0 erreur.
+
+**Commit** : `feat(ui): refait l'ecran relecteur`
+
+---
+
 ### Issue #48 — Commit 5 : écran étudiant
 
 **Fait** : `EtudiantPage.jsx` réorganisé en **stepper de 3 étapes** — chaque section devient une `.carte-bloc` avec pastille numérotée (`.etape-numero`, fond primaire) : **1 — Qui êtes-vous ?** (les deux selects ; une fois l'étudiant choisi, le formulaire se **masque et se réduit à un résumé** badge vert ✓ + nom + promotion, `role="status"`), **2 — Marquer ma présence** (code en grand style mono/letter-spacing, bouton avec icône ✓, confirmation « ✓ Présence marquée, merci ! » animée), **3 — Déposer un exercice** (bouton avec icône upload). Les étapes 2 et 3 sont **estompées** (`.etape-verrouillee`, opacité 0.6) tant que l'étudiant n'est pas identifié — les champs restent accessibles (aucune fonctionnalité retirée, seulement une guidance visuelle). Section « Mes exercices et notes » : le tableau devient des **cartes individuelles** (`.notes-cartes`, grille auto-fill) avec lien cliquable, **badge de statut** (« En attente » neutre / « Relu » vert — libellés lisibles, valeurs API inchangées), **note en gros en badge coloré** (>15 vert, 10–15 orange, <10 rouge, « — » neutre) avec **mention « (provisoire) » conservée** si `noteProvisoire === true`, commentaire en dessous. Mention RG7 : aucun relecteur affiché.

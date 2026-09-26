@@ -710,6 +710,38 @@
   color: var(--texte-metadonnee);
 }
 
+/* ---------- Écran relecteur (commit 6) ---------- */
+.relectures-liste {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.relectures-vide {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 40px 24px;
+  text-align: center;
+  color: var(--tertiaire-fonce);
+}
+
+.relectures-vide-titre {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--texte);
+}
+
+.relectures-vide-texte {
+  color: var(--texte-secondaire);
+  font-size: 14px;
+}
+
+.formulaire-relecture {
+  max-width: none;
+}
+
 /* ---------- Divers ---------- */
 .retour {
   display: inline-block;

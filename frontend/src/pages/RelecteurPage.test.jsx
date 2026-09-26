@@ -80,7 +80,8 @@ describe('RelecteurPage', () => {
     expect(
       await screen.findByText("Relecture rendue pour l'exercice #7."),
     ).toBeInTheDocument()
-    expect(await screen.findByText('Aucune relecture en attente. Bravo !')).toBeInTheDocument()
+    // Nouveau message de l'état vide (mission #48) : bienveillant, non condescendant
+    expect(await screen.findByText('Tout est à jour. Reposez-vous !')).toBeInTheDocument()
     expect(screen.queryByText('#7')).not.toBeInTheDocument()
   })
 
